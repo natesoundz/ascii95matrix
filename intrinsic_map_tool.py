@@ -39,6 +39,8 @@ import subprocess
 import sys
 import tkinter as tk
 
+import numpy as np
+
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 
@@ -1183,46 +1185,138 @@ class IntrinsicMapApp(
             self.scan_root.set(value)
             self.scan_files()
 
+    def inspect_npz_kind(
+        self,
+        path: Path,
+    ) -> str | None:
+        try:
+            with np.load(
+                path,
+                allow_pickle=False,
+            ) as data:
+                keys = set(
+                    data.files
+                )
+
+                if {
+                    "ascii_code",
+                    "dimension_name",
+                    "participation",
+                }.issubset(keys):
+                    if (
+                        np.asarray(data["ascii_code"]).shape == (95,)
+                        and np.asarray(data["dimension_name"]).shape == (437,)
+                        and np.asarray(data["participation"]).shape == (95, 437)
+                    ):
+                        return "REGISTRY NPZ"
+
+                if {
+                    "y",
+                    "g",
+                    "w",
+                }.issubset(keys):
+                    g = np.asarray(
+                        data["g"]
+                    )
+
+                    if (
+                        g.ndim == 2
+                        and g.shape[1] == 437
+                    ):
+                        return "EVIDENCE NPZ"
+
+                if "profile" in keys:
+                    if np.asarray(
+                        data["profile"]
+                    ).shape == (437,):
+                        return "PROFILE NPZ"
+
+                if "w_ck" in keys:
+                    if np.asarray(
+                        data["w_ck"]
+                    ).shape == (95, 437):
+                        return "CENTER-WEIGHT NPZ"
+
+        except Exception:
+            return None
+
+        return None
+
     def classify_available_file(
         self,
         path: Path,
-    ) -> str:
+    ) -> str | None:
+        if path.is_dir():
+            required = {
+                "geometry.npz",
+                "compile_manifest.json",
+                "frozen_manifest.json",
+            }
+
+            try:
+                names = {
+                    child.name
+                    for child in path.iterdir()
+                    if child.is_file()
+                }
+            except OSError:
+                return None
+
+            if required.issubset(
+                names
+            ):
+                return "FROZEN GEOMETRY"
+
+            return None
+
         name = path.name.lower()
         suffix = path.suffix.lower()
 
-        if suffix in {".xlsx", ".xls"}:
+        if suffix == ".npz":
+            return self.inspect_npz_kind(
+                path
+            )
+
+        if suffix in {
+            ".xlsx",
+            ".xls",
+        }:
             if (
                 "ascii95" in name
                 or "canonical" in name
                 or "matrix" in name
             ):
-                return "CANONICAL MATRIX"
-            return "SPREADSHEET"
+                return "SOURCE MATRIX"
 
-        if suffix == ".npz":
-            if "registry" in name:
-                return "REGISTRY NPZ"
-            if "evidence" in name:
-                return "EVIDENCE NPZ"
-            if "profile" in name:
-                return "PROFILE NPZ"
-            if "weight" in name:
-                return "CENTER-WEIGHT NPZ"
-            return "NPZ"
+        return None
 
-        if suffix == ".py":
-            return "PYTHON"
+    def category_allowed_for_command(
+        self,
+        category: str,
+    ) -> bool:
+        command = self.current_command
 
-        if suffix in {".csv", ".tsv"}:
-            return "TABLE"
+        if command == "compile":
+            return category in {
+                "REGISTRY NPZ",
+                "EVIDENCE NPZ",
+                "CENTER-WEIGHT NPZ",
+                "SOURCE MATRIX",
+            }
 
-        if suffix == ".json":
-            return "JSON"
+        if command == "validate-frozen":
+            return category == "FROZEN GEOMETRY"
 
-        if suffix in {".md", ".txt"}:
-            return "TEXT"
+        if command == "audit-coordinate":
+            return category == "FROZEN GEOMETRY"
 
-        return "FILE"
+        if command == "decode-profile":
+            return category in {
+                "FROZEN GEOMETRY",
+                "PROFILE NPZ",
+            }
+
+        return False
 
     def scan_files(
         self,
@@ -1233,50 +1327,203 @@ class IntrinsicMapApp(
             ).expanduser().resolve()
 
             if not root.exists():
-                raise FileNotFoundError(root)
+                raise FileNotFoundError(
+                    root
+                )
 
             if not root.is_dir():
-                raise NotADirectoryError(root)
+                raise NotADirectoryError(
+                    root
+                )
 
-            discovered = [
-                path
-                for path in root.rglob("*")
-                if path.is_file()
-            ]
+            skip_names = {
+                ".git",
+                "__pycache__",
+                "node_modules",
+                ".venv",
+                "venv",
+                "site-packages",
+                "dist",
+                "build",
+                ".mypy_cache",
+                ".pytest_cache",
+            }
+
+            root_depth = len(
+                root.parts
+            )
+
+            max_depth = 5
+            max_results = 500
+
+            discovered: list[
+                tuple[str, Path]
+            ] = []
+
+            for directory, dirnames, filenames in os.walk(
+                root
+            ):
+                current = Path(
+                    directory
+                )
+
+                depth = (
+                    len(current.parts)
+                    - root_depth
+                )
+
+                dirnames[:] = [
+                    name
+                    for name in dirnames
+                    if name not in skip_names
+                    and not name.startswith(".")
+                ]
+
+                if depth >= max_depth:
+                    dirnames[:] = []
+
+                directory_category = (
+                    self.classify_available_file(
+                        current
+                    )
+                )
+
+                if (
+                    directory_category
+                    and self.category_allowed_for_command(
+                        directory_category
+                    )
+                ):
+                    discovered.append(
+                        (
+                            directory_category,
+                            current,
+                        )
+                    )
+
+                wanted_suffixes = {
+                    ".npz",
+                    ".xlsx",
+                    ".xls",
+                }
+
+                for filename in filenames:
+                    path = current / filename
+
+                    if (
+                        path.suffix.lower()
+                        not in wanted_suffixes
+                    ):
+                        continue
+
+                    category = (
+                        self.classify_available_file(
+                            path
+                        )
+                    )
+
+                    if category is None:
+                        continue
+
+                    if not self.category_allowed_for_command(
+                        category
+                    ):
+                        continue
+
+                    discovered.append(
+                        (
+                            category,
+                            path,
+                        )
+                    )
+
+                    if (
+                        len(discovered)
+                        >= max_results
+                    ):
+                        break
+
+                if (
+                    len(discovered)
+                    >= max_results
+                ):
+                    break
+
+            category_order = {
+                "REGISTRY NPZ": 0,
+                "EVIDENCE NPZ": 1,
+                "CENTER-WEIGHT NPZ": 2,
+                "PROFILE NPZ": 3,
+                "FROZEN GEOMETRY": 4,
+                "SOURCE MATRIX": 5,
+            }
 
             discovered.sort(
-                key=lambda path: (
-                    self.classify_available_file(path),
-                    str(path).lower(),
+                key=lambda item: (
+                    category_order.get(
+                        item[0],
+                        99,
+                    ),
+                    str(
+                        item[1]
+                    ).lower(),
                 )
             )
 
-            self.available_files = discovered
+            self.available_files = [
+                path
+                for _category, path
+                in discovered
+            ]
 
             self.available_file_list.delete(
                 0,
                 tk.END,
             )
 
-            for path in discovered:
-                category = self.classify_available_file(path)
-
+            for category, path in discovered:
                 try:
-                    shown = path.relative_to(root)
+                    shown = path.relative_to(
+                        root
+                    )
                 except ValueError:
                     shown = path
 
                 self.available_file_list.insert(
                     tk.END,
-                    f"{category:<18}  {shown}",
+                    f"{category:<20}  {shown}",
                 )
 
             self.file_count.set(
-                f"{len(discovered)} files"
+                f"{len(discovered)} usable"
             )
 
+            if (
+                len(discovered)
+                >= max_results
+            ):
+                status = (
+                    f"Showing first {max_results} compatible inputs "
+                    f"under {root}. Choose a narrower project folder "
+                    "for a complete list."
+                )
+            elif discovered:
+                status = (
+                    f"{len(discovered)} compatible inputs found "
+                    f"for '{self.current_command}'."
+                )
+            elif self.current_command == "self-test":
+                status = (
+                    "self-test requires no input files."
+                )
+            else:
+                status = (
+                    f"No compatible inputs found for "
+                    f"'{self.current_command}' under {root}."
+                )
+
             self.status.set(
-                f"Scanned {root}: {len(discovered)} files found."
+                status
             )
 
         except Exception as exc:
@@ -1296,7 +1543,7 @@ class IntrinsicMapApp(
                 "file_count",
             ):
                 self.file_count.set(
-                    "0 files"
+                    "0 usable"
                 )
 
             self.status.set(
@@ -1315,8 +1562,8 @@ class IntrinsicMapApp(
 
         if not selection:
             messagebox.showinfo(
-                "Select a file",
-                "Select a file from Available Files first.",
+                "Select an input",
+                "Select an input from the compatible-input list first.",
             )
             return
 
@@ -1324,80 +1571,59 @@ class IntrinsicMapApp(
             selection[0]
         ]
 
-        suffix = path.suffix.lower()
-        name = path.name.lower()
+        category = self.classify_available_file(
+            path
+        )
 
-        preferred_destinations: list[str] = []
-
-        if suffix == ".npz":
-            if "registry" in name:
-                preferred_destinations.append(
-                    "registry"
-                )
-
-            if "evidence" in name:
-                preferred_destinations.append(
-                    "evidence"
-                )
-
-            if "profile" in name:
-                preferred_destinations.append(
-                    "profile_npz"
-                )
-
-            if "weight" in name:
-                preferred_destinations.append(
-                    "center_weight_npz"
-                )
-
-        if suffix in {".xlsx", ".xls"}:
+        if category == "SOURCE MATRIX":
             messagebox.showinfo(
-                "Canonical spreadsheet detected",
+                "Canonical source matrix",
                 (
                     f"{path.name}\n\n"
-                    "This is available and has been detected, but the "
-                    "current compiler's --registry field requires an NPZ "
-                    "registry rather than an Excel workbook."
+                    "This is the canonical spreadsheet source. "
+                    "The current --registry field cannot consume it "
+                    "directly; it must first be converted to a REGISTRY NPZ."
                 ),
             )
             return
 
-        candidates = [
-            field
-            for field in self.form_fields
-            if is_path_action(field.action)
-            and field.action.dest != "out"
-            and field.action.dest != "frozen_directory"
-        ]
+        destination_by_category = {
+            "REGISTRY NPZ": "registry",
+            "EVIDENCE NPZ": "evidence",
+            "CENTER-WEIGHT NPZ": "center_weight_npz",
+            "PROFILE NPZ": "profile_npz",
+            "FROZEN GEOMETRY": "frozen_directory",
+        }
 
-        target = None
+        destination = (
+            destination_by_category.get(
+                category
+            )
+        )
 
-        for destination in preferred_destinations:
-            for field in candidates:
-                if field.action.dest == destination:
-                    target = field
-                    break
+        if destination is None:
+            messagebox.showinfo(
+                "Unsupported input",
+                "The selected item does not map to an input field.",
+            )
+            return
 
-            if target is not None:
-                break
-
-        if target is None:
-            for field in candidates:
-                if not str(
-                    field.raw_value()
-                ).strip():
-                    target = field
-                    break
-
-        if target is None and candidates:
-            target = candidates[0]
+        target = next(
+            (
+                field
+                for field in self.form_fields
+                if field.action.dest
+                == destination
+            ),
+            None,
+        )
 
         if target is None:
             messagebox.showinfo(
-                "No compatible field",
+                "No matching field",
                 (
-                    "The selected command has no file-input field "
-                    "that can accept this file."
+                    f"{category} is not used by the "
+                    f"'{self.current_command}' command."
                 ),
             )
             return
@@ -1469,6 +1695,12 @@ class IntrinsicMapApp(
         )
 
         self.generate_command()
+
+        if hasattr(
+            self,
+            "available_file_list",
+        ):
+            self.scan_files()
 
     def build_form(
         self,
