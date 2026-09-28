@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 import shlex
 import subprocess
@@ -1618,6 +1619,11 @@ class IntrinsicMapApp(
                             item[1]
                         )
 
+                    elif item[0] == "dataset":
+                        dataset_var.set(
+                            item[1]
+                        )
+
                     elif item[0] == "done":
                         running["value"] = False
                         status_var.set(
@@ -1846,16 +1852,25 @@ class IntrinsicMapApp(
                     "No nonempty evidence records were produced."
                 )
 
-            dataset_var.set(
-                str(dataset_path)
+            log_queue.put(
+                (
+                    "dataset",
+                    str(dataset_path),
+                )
             )
 
-            append_log(
-                f"DATASET BUILT: {dataset_path}"
+            log_queue.put(
+                (
+                    "line",
+                    f"DATASET BUILT: {dataset_path}",
+                )
             )
 
-            append_log(
-                f"records={record_count} characters={character_count} objective={objective}"
+            log_queue.put(
+                (
+                    "line",
+                    f"records={record_count} characters={character_count} objective={objective}",
+                )
             )
 
             return dataset_path
@@ -2029,36 +2044,25 @@ class IntrinsicMapApp(
 
         def do_verify(
             run_dir=None,
+            weights_path=None,
         ):
             require_base_files()
 
-            if run_dir is None:
-                run_dir = run_dir_holder[
-                    "path"
-                ]
-
-            if run_dir is None:
-                value = filedialog.askopenfilename(
-                    parent=window,
-                    title="Select weights.npz",
-                    filetypes=[
-                        (
-                            "NPZ weights",
-                            "*.npz",
-                        )
-                    ],
+            if weights_path is not None:
+                weights = Path(
+                    weights_path
                 )
+            else:
+                if run_dir is None:
+                    run_dir = run_dir_holder[
+                        "path"
+                    ]
 
-                if not value:
+                if run_dir is None:
                     raise ValueError(
-                        "No weights file selected."
+                        "No compiled run is active. Select weights.npz with the Verify button."
                     )
 
-                weights = Path(
-                    value
-                )
-
-            else:
                 weights = (
                     Path(run_dir)
                     / "weights.npz"
@@ -2137,9 +2141,12 @@ class IntrinsicMapApp(
 
         def build_only():
             path = build_dataset_file()
-            append_log(
-                "READY DATASET: "
-                + str(path)
+            log_queue.put(
+                (
+                    "line",
+                    "READY DATASET: "
+                    + str(path),
+                )
             )
 
         def clean_run():
@@ -2262,13 +2269,47 @@ class IntrinsicMapApp(
             padx=(0, 6),
         )
 
+        def verify_button():
+            current = run_dir_holder[
+                "path"
+            ]
+
+            if current is not None:
+                launch(
+                    lambda: do_verify(
+                        run_dir=current
+                    ),
+                    "VERIFY WEIGHTS",
+                )
+                return
+
+            value = filedialog.askopenfilename(
+                parent=window,
+                title="Select weights.npz",
+                filetypes=[
+                    (
+                        "NPZ weights",
+                        "*.npz",
+                    ),
+                    (
+                        "All files",
+                        "*.*",
+                    ),
+                ],
+            )
+
+            if value:
+                launch(
+                    lambda value=value: do_verify(
+                        weights_path=value
+                    ),
+                    "VERIFY WEIGHTS",
+                )
+
         ttk.Button(
             controls,
             text="Verify Weights",
-            command=lambda: launch(
-                do_verify,
-                "VERIFY WEIGHTS",
-            ),
+            command=verify_button,
         ).pack(
             side="left",
             padx=(0, 6),
