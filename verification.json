@@ -1,0 +1,124 @@
+{
+  "source_repository": "natesoundz/Compiled-intelligence-lab",
+  "source_branch": "matrix-compiled-254-attention-ffn",
+  "source_commit": "27411dc16e3cb7e286bf3eec9708dae88f62ebc4",
+  "canonical_registry": {
+    "workbook_sha256": "065cb5424ec0fd2d206de093e13ed2317f29a0d6a1eda837df1a9d46f81506ab",
+    "characters": 95,
+    "attribute_columns": 437,
+    "status_counts": {
+      "0": 806,
+      "1": 328,
+      "E": 17983,
+      "K": 380,
+      "M": 2220,
+      "R": 2092,
+      "S": 230,
+      "U": 6586,
+      "V": 780,
+      "X": 10110
+    },
+    "intrinsic_unicode_math": "+<=>^|~",
+    "numeric_compiler_input": false,
+    "reason": "Typed participation registry. Deferred values, relational projections, measurement transforms and coordinate bindings are not supplied by status cells."
+  },
+  "equation_extraction": {
+    "functions": 12,
+    "ast_equivalent_after_documented_changes": true,
+    "documented_changes": [
+      "Profiler namespace references flattened.",
+      "Detector kept in float64; emitted embedding also kept in float64."
+    ]
+  },
+  "independent_counts": {
+    "objective_modes": 6,
+    "record_cases": 12,
+    "dense_and_sparse_ground_truth": true,
+    "near_views_exact": true,
+    "full_context_far_counts_exact": true,
+    "objective_counts_exact": true,
+    "target_counts_exact": true,
+    "real_source_text": "    objective_counts = {k: {\"records\": 0, \"occurrences\": 0, \"weight_sum\": 0.0} for k in ACTIVE_OBJECTIVES}"
+  },
+  "compilation": {
+    "dataset": "actual objective-profiler Python source, one nonempty physical line per record",
+    "source_path": "tools/254d_profiler_objectives_all_v2.py",
+    "line_endings": "record boundaries, excluded from printable ASCII95 content",
+    "records": 209,
+    "truth_positions": 8985,
+    "sample_inputs": [
+      "def assert_ascii95(text: str, source_id: str = \"record\") -> None:",
+      "def ground_truth_positions(record: dict) -> list[int]:",
+      "def visible_positions(objective: str, position: int, n: int) -> tuple[int, ...]:"
+    ],
+    "dataset_sha256": "8b67ee40e980b57140dccd5a22de2764d18de8a280eb7f8dfc97ac2dc647e12f",
+    "verification": {
+      "detector_max_abs_error": 7.480405609652503e-15,
+      "qk_max_abs_error": 2.3837184226493946e-07,
+      "ffn_max_abs_error": 9.237055564881302e-14,
+      "finite": true,
+      "embedding_rank": 95,
+      "passed": true,
+      "scope": "numerical realization of declared historical equations; not target-free prediction"
+    },
+    "residual_stage_audit": {
+      "occurrences": 8985,
+      "embedding_residual_rms": 0.034403001615429724,
+      "post_attention_residual_rms": 0.01890728846675108,
+      "post_ffn_residual_rms": 0.016432509953078846,
+      "attention_nonworse_occurrences": 7020,
+      "attention_nonworse_fraction": 0.7813021702838063,
+      "ffn_projection_coefficient_min": -63.472101522415585,
+      "ffn_projection_coefficient_max": 113.31179822328708,
+      "ffn_projection_nonzero": 17901,
+      "stage_order": [
+        "EMBEDDING_FROZEN",
+        "ATTENTION_FROZEN",
+        "FFN_COMPILED"
+      ],
+      "replay_mode": "VECTORIZED_PER_RECORD_EXACT_SAME_EQUATIONS"
+    },
+    "weight_shapes": {
+      "token_geometry": [
+        95,
+        254
+      ],
+      "token_detector_W": [
+        254,
+        95
+      ],
+      "attention_WQ": [
+        95,
+        95
+      ],
+      "attention_WK": [
+        14,
+        95,
+        95
+      ],
+      "attention_WV": [
+        14,
+        95,
+        254
+      ],
+      "ffn_W1": [
+        603,
+        48260
+      ],
+      "ffn_W2": [
+        48260,
+        254
+      ]
+    },
+    "saved_weight_bytes": 2597826,
+    "historical_float32_detector_error_on_same_evidence": 3.6604428714781534e-06,
+    "serialized_arrays_exactly_equal_verified_arrays": true,
+    "tampered_embedding_rejected": true
+  },
+  "input_validation": {
+    "noninteger_duplicate_unsorted_out_of_range_positions_rejected": true
+  },
+  "canonical_registry_to_weights_complete": false,
+  "target_free_prediction_verified": false,
+  "generalization_evaluated": false
+}

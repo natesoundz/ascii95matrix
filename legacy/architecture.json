@@ -1,0 +1,28 @@
+{
+  "schema": "ascii95.legacy_staged_residual.v1",
+  "vocab_size": 95,
+  "d_model": 254,
+  "offsets": [
+    -7,
+    -6,
+    -5,
+    -4,
+    -3,
+    -2,
+    -1,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "ffn_hidden": 48260,
+  "geometry_dtype": "float64",
+  "detector_dtype": "float64",
+  "attention_ffn_dtype": "float32",
+  "substrate": "historical_binary_254",
+  "matrix_path": "ASCII95_254_BINARY_MATRIX.tsv",
+  "matrix_sha256": "1e01d79b93c0901c20e8a066ab5a5c84e3b5e221b250986165d05162687c86c3"
+}
