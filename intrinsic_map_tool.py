@@ -767,6 +767,10 @@ class IntrinsicMapApp(
 
         self.current_command = None
         self.form_fields: list[FormField] = []
+        self.scan_root = tk.StringVar(
+            value=str(HERE)
+        )
+        self.available_files: list[Path] = []
 
         self._build_interface()
 
@@ -782,6 +786,8 @@ class IntrinsicMapApp(
             self.select_command(
                 names[0]
             )
+
+        self.scan_files()
 
     def _build_interface(
         self,
@@ -963,8 +969,128 @@ class IntrinsicMapApp(
         scrollbar.place(
             relx=1.0,
             rely=0.0,
-            relheight=0.63,
+            relheight=0.48,
             anchor="ne",
+        )
+
+        files_frame = ttk.LabelFrame(
+            right,
+            text="Available Files",
+            padding=8,
+        )
+
+        files_frame.pack(
+            fill="both",
+            pady=(8, 0),
+        )
+
+        scan_toolbar = ttk.Frame(
+            files_frame
+        )
+
+        scan_toolbar.pack(
+            fill="x",
+            pady=(0, 6),
+        )
+
+        ttk.Entry(
+            scan_toolbar,
+            textvariable=self.scan_root,
+        ).pack(
+            side="left",
+            fill="x",
+            expand=True,
+        )
+
+        ttk.Button(
+            scan_toolbar,
+            text="Folder",
+            command=self.choose_scan_root,
+        ).pack(
+            side="left",
+            padx=(6, 0),
+        )
+
+        ttk.Button(
+            scan_toolbar,
+            text="Scan",
+            command=self.scan_files,
+        ).pack(
+            side="left",
+            padx=(6, 0),
+        )
+
+        file_list_frame = ttk.Frame(
+            files_frame
+        )
+
+        file_list_frame.pack(
+            fill="both",
+            expand=True,
+        )
+
+        file_scroll = ttk.Scrollbar(
+            file_list_frame,
+            orient="vertical",
+        )
+
+        self.available_file_list = tk.Listbox(
+            file_list_frame,
+            height=9,
+            exportselection=False,
+            yscrollcommand=file_scroll.set,
+            font=(
+                "Consolas",
+                9,
+            ),
+        )
+
+        file_scroll.configure(
+            command=self.available_file_list.yview
+        )
+
+        self.available_file_list.pack(
+            side="left",
+            fill="both",
+            expand=True,
+        )
+
+        file_scroll.pack(
+            side="right",
+            fill="y",
+        )
+
+        self.available_file_list.bind(
+            "<Double-Button-1>",
+            lambda _event: self.use_selected_file(),
+        )
+
+        file_buttons = ttk.Frame(
+            files_frame
+        )
+
+        file_buttons.pack(
+            fill="x",
+            pady=(6, 0),
+        )
+
+        ttk.Button(
+            file_buttons,
+            text="Use Selected",
+            command=self.use_selected_file,
+        ).pack(
+            side="left",
+        )
+
+        self.file_count = tk.StringVar(
+            value="0 files"
+        )
+
+        ttk.Label(
+            file_buttons,
+            textvariable=self.file_count,
+        ).pack(
+            side="right",
         )
 
         generated = ttk.LabelFrame(
@@ -1044,6 +1170,244 @@ class IntrinsicMapApp(
         ).pack(
             fill="x",
             pady=(6, 0),
+        )
+
+    def choose_scan_root(
+        self,
+    ):
+        value = filedialog.askdirectory(
+            initialdir=self.scan_root.get() or str(HERE)
+        )
+
+        if value:
+            self.scan_root.set(value)
+            self.scan_files()
+
+    def classify_available_file(
+        self,
+        path: Path,
+    ) -> str:
+        name = path.name.lower()
+        suffix = path.suffix.lower()
+
+        if suffix in {".xlsx", ".xls"}:
+            if (
+                "ascii95" in name
+                or "canonical" in name
+                or "matrix" in name
+            ):
+                return "CANONICAL MATRIX"
+            return "SPREADSHEET"
+
+        if suffix == ".npz":
+            if "registry" in name:
+                return "REGISTRY NPZ"
+            if "evidence" in name:
+                return "EVIDENCE NPZ"
+            if "profile" in name:
+                return "PROFILE NPZ"
+            if "weight" in name:
+                return "CENTER-WEIGHT NPZ"
+            return "NPZ"
+
+        if suffix == ".py":
+            return "PYTHON"
+
+        if suffix in {".csv", ".tsv"}:
+            return "TABLE"
+
+        if suffix == ".json":
+            return "JSON"
+
+        if suffix in {".md", ".txt"}:
+            return "TEXT"
+
+        return "FILE"
+
+    def scan_files(
+        self,
+    ):
+        try:
+            root = Path(
+                self.scan_root.get()
+            ).expanduser().resolve()
+
+            if not root.exists():
+                raise FileNotFoundError(root)
+
+            if not root.is_dir():
+                raise NotADirectoryError(root)
+
+            discovered = [
+                path
+                for path in root.rglob("*")
+                if path.is_file()
+            ]
+
+            discovered.sort(
+                key=lambda path: (
+                    self.classify_available_file(path),
+                    str(path).lower(),
+                )
+            )
+
+            self.available_files = discovered
+
+            self.available_file_list.delete(
+                0,
+                tk.END,
+            )
+
+            for path in discovered:
+                category = self.classify_available_file(path)
+
+                try:
+                    shown = path.relative_to(root)
+                except ValueError:
+                    shown = path
+
+                self.available_file_list.insert(
+                    tk.END,
+                    f"{category:<18}  {shown}",
+                )
+
+            self.file_count.set(
+                f"{len(discovered)} files"
+            )
+
+            self.status.set(
+                f"Scanned {root}: {len(discovered)} files found."
+            )
+
+        except Exception as exc:
+            self.available_files = []
+
+            if hasattr(
+                self,
+                "available_file_list",
+            ):
+                self.available_file_list.delete(
+                    0,
+                    tk.END,
+                )
+
+            if hasattr(
+                self,
+                "file_count",
+            ):
+                self.file_count.set(
+                    "0 files"
+                )
+
+            self.status.set(
+                f"SCAN ERROR — {exc}"
+            )
+
+            messagebox.showerror(
+                "Scan Error",
+                str(exc),
+            )
+
+    def use_selected_file(
+        self,
+    ):
+        selection = self.available_file_list.curselection()
+
+        if not selection:
+            messagebox.showinfo(
+                "Select a file",
+                "Select a file from Available Files first.",
+            )
+            return
+
+        path = self.available_files[
+            selection[0]
+        ]
+
+        suffix = path.suffix.lower()
+        name = path.name.lower()
+
+        preferred_destinations: list[str] = []
+
+        if suffix == ".npz":
+            if "registry" in name:
+                preferred_destinations.append(
+                    "registry"
+                )
+
+            if "evidence" in name:
+                preferred_destinations.append(
+                    "evidence"
+                )
+
+            if "profile" in name:
+                preferred_destinations.append(
+                    "profile_npz"
+                )
+
+            if "weight" in name:
+                preferred_destinations.append(
+                    "center_weight_npz"
+                )
+
+        if suffix in {".xlsx", ".xls"}:
+            messagebox.showinfo(
+                "Canonical spreadsheet detected",
+                (
+                    f"{path.name}\n\n"
+                    "This is available and has been detected, but the "
+                    "current compiler's --registry field requires an NPZ "
+                    "registry rather than an Excel workbook."
+                ),
+            )
+            return
+
+        candidates = [
+            field
+            for field in self.form_fields
+            if is_path_action(field.action)
+            and field.action.dest != "out"
+            and field.action.dest != "frozen_directory"
+        ]
+
+        target = None
+
+        for destination in preferred_destinations:
+            for field in candidates:
+                if field.action.dest == destination:
+                    target = field
+                    break
+
+            if target is not None:
+                break
+
+        if target is None:
+            for field in candidates:
+                if not str(
+                    field.raw_value()
+                ).strip():
+                    target = field
+                    break
+
+        if target is None and candidates:
+            target = candidates[0]
+
+        if target is None:
+            messagebox.showinfo(
+                "No compatible field",
+                (
+                    "The selected command has no file-input field "
+                    "that can accept this file."
+                ),
+            )
+            return
+
+        target.variable.set(
+            str(path)
+        )
+
+        self.status.set(
+            f"Inserted {path.name} into {action_flag(target.action)}."
         )
 
     def _on_command_selected(
