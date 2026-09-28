@@ -36,6 +36,9 @@ import importlib.util
 import os
 import shlex
 import subprocess
+import datetime
+import threading
+import queue
 import sys
 import tkinter as tk
 
@@ -47,6 +50,20 @@ from tkinter import filedialog, messagebox, ttk
 
 HERE = Path(__file__).resolve().parent
 COMPILER_PATH = HERE / "relational_compiler.py"
+
+WEIGHT_COMPILER_PATH = HERE / "compile_weights.py"
+CANONICAL_WORKBOOK_PATH = HERE / "data" / "Canonical_ASCII95_Attribute_Matrix_v1.xlsx"
+LEGACY_ARCHITECTURE_PATH = HERE / "legacy" / "architecture.json"
+
+MODEL_OBJECTIVES = (
+    "LM_HOLE",
+    "SFT_RESPONSE",
+    "CHAT_ASSISTANT",
+    "PROBLEM_SOLVING",
+    "CODE_CAUSAL",
+    "CODE_INSTRUCTION",
+)
+
 
 
 INPUT_FORMAT_DOCS = {
@@ -826,6 +843,33 @@ class IntrinsicMapApp(
             weight=1,
         )
 
+        generator_box = ttk.LabelFrame(
+            left,
+            text="Model Generator",
+            padding=8,
+        )
+
+        generator_box.pack(
+            fill="x",
+            pady=(0, 10),
+        )
+
+        ttk.Label(
+            generator_box,
+            text="One clean dataset → weights run",
+        ).pack(
+            anchor="w",
+            pady=(0, 6),
+        )
+
+        ttk.Button(
+            generator_box,
+            text="Open Model Generator",
+            command=self.open_model_generator,
+        ).pack(
+            fill="x",
+        )
+
         ttk.Label(
             left,
             text="Compiler Commands",
@@ -1173,6 +1217,1075 @@ class IntrinsicMapApp(
             fill="x",
             pady=(6, 0),
         )
+
+    def open_model_generator(
+        self,
+    ):
+        window = tk.Toplevel(
+            self
+        )
+
+        window.title(
+            "Model Generator — One Clean Run"
+        )
+
+        window.geometry(
+            "1080x820"
+        )
+
+        window.minsize(
+            900,
+            650,
+        )
+
+        window.columnconfigure(
+            0,
+            weight=1,
+        )
+
+        window.rowconfigure(
+            1,
+            weight=1,
+        )
+
+        header = ttk.Frame(
+            window,
+            padding=10,
+        )
+
+        header.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+        )
+
+        ttk.Label(
+            header,
+            text="MODEL GENERATOR",
+            font=(
+                "",
+                14,
+                "bold",
+            ),
+        ).pack(
+            anchor="w",
+        )
+
+        ttk.Label(
+            header,
+            text=(
+                "Working control compiler: dataset → compiled weights → verification. "
+                "This executable control is the repository's historical 254-D compiler. "
+                "The canonical 437-D workbook is inspected but is not falsely treated as "
+                "a completed 437-D Q/K/V/FFN compiler."
+            ),
+            wraplength=1020,
+        ).pack(
+            anchor="w",
+            pady=(4, 0),
+        )
+
+        body = ttk.Frame(
+            window,
+            padding=10,
+        )
+
+        body.grid(
+            row=1,
+            column=0,
+            sticky="nsew",
+        )
+
+        body.columnconfigure(
+            1,
+            weight=1,
+        )
+
+        body.rowconfigure(
+            9,
+            weight=1,
+        )
+
+        source_var = tk.StringVar()
+        dataset_var = tk.StringVar()
+        objective_var = tk.StringVar(
+            value="CODE_CAUSAL"
+        )
+        output_root_var = tk.StringVar(
+            value=str(
+                HERE / "model_runs"
+            )
+        )
+
+        workbook_var = tk.StringVar(
+            value=str(
+                CANONICAL_WORKBOOK_PATH
+            )
+        )
+
+        compiler_var = tk.StringVar(
+            value=str(
+                WEIGHT_COMPILER_PATH
+            )
+        )
+
+        architecture_var = tk.StringVar(
+            value=str(
+                LEGACY_ARCHITECTURE_PATH
+            )
+        )
+
+        status_var = tk.StringVar(
+            value="Ready."
+        )
+
+        run_dir_holder = {
+            "path": None
+        }
+
+        log_queue: queue.Queue = queue.Queue()
+
+        def add_path_row(
+            row,
+            label,
+            variable,
+            browse_command=None,
+        ):
+            ttk.Label(
+                body,
+                text=label,
+            ).grid(
+                row=row,
+                column=0,
+                sticky="w",
+                padx=(0, 8),
+                pady=4,
+            )
+
+            ttk.Entry(
+                body,
+                textvariable=variable,
+            ).grid(
+                row=row,
+                column=1,
+                sticky="ew",
+                pady=4,
+            )
+
+            if browse_command:
+                ttk.Button(
+                    body,
+                    text="Browse",
+                    command=browse_command,
+                ).grid(
+                    row=row,
+                    column=2,
+                    padx=(6, 0),
+                    pady=4,
+                )
+
+        def choose_source():
+            choice = messagebox.askyesnocancel(
+                "Source selection",
+                "Yes = choose a source file.\nNo = choose a source folder.\nCancel = do nothing.",
+                parent=window,
+            )
+
+            if choice is None:
+                return
+
+            if choice:
+                value = filedialog.askopenfilename(
+                    parent=window
+                )
+            else:
+                value = filedialog.askdirectory(
+                    parent=window
+                )
+
+            if value:
+                source_var.set(
+                    value
+                )
+
+        def choose_dataset():
+            value = filedialog.askopenfilename(
+                parent=window,
+                filetypes=[
+                    (
+                        "JSONL evidence",
+                        "*.jsonl",
+                    ),
+                    (
+                        "All files",
+                        "*.*",
+                    ),
+                ],
+            )
+
+            if value:
+                dataset_var.set(
+                    value
+                )
+
+        def choose_output():
+            value = filedialog.askdirectory(
+                parent=window
+            )
+
+            if value:
+                output_root_var.set(
+                    value
+                )
+
+        add_path_row(
+            0,
+            "Source file/folder",
+            source_var,
+            choose_source,
+        )
+
+        add_path_row(
+            1,
+            "Evidence JSONL",
+            dataset_var,
+            choose_dataset,
+        )
+
+        ttk.Label(
+            body,
+            text="Objective",
+        ).grid(
+            row=2,
+            column=0,
+            sticky="w",
+            padx=(0, 8),
+            pady=4,
+        )
+
+        ttk.Combobox(
+            body,
+            textvariable=objective_var,
+            values=list(
+                MODEL_OBJECTIVES
+            ),
+            state="readonly",
+        ).grid(
+            row=2,
+            column=1,
+            sticky="ew",
+            pady=4,
+        )
+
+        add_path_row(
+            3,
+            "Output root",
+            output_root_var,
+            choose_output,
+        )
+
+        add_path_row(
+            4,
+            "Canonical 437 workbook",
+            workbook_var,
+            None,
+        )
+
+        add_path_row(
+            5,
+            "Weight compiler",
+            compiler_var,
+            None,
+        )
+
+        add_path_row(
+            6,
+            "Control architecture",
+            architecture_var,
+            None,
+        )
+
+        controls = ttk.Frame(
+            body
+        )
+
+        controls.grid(
+            row=7,
+            column=0,
+            columnspan=3,
+            sticky="ew",
+            pady=(10, 6),
+        )
+
+        log_frame = ttk.LabelFrame(
+            body,
+            text="Run Log",
+            padding=6,
+        )
+
+        log_frame.grid(
+            row=9,
+            column=0,
+            columnspan=3,
+            sticky="nsew",
+            pady=(8, 0),
+        )
+
+        log_frame.columnconfigure(
+            0,
+            weight=1,
+        )
+
+        log_frame.rowconfigure(
+            0,
+            weight=1,
+        )
+
+        log_text = tk.Text(
+            log_frame,
+            wrap="word",
+            font=(
+                "Consolas",
+                9,
+            ),
+        )
+
+        log_text.grid(
+            row=0,
+            column=0,
+            sticky="nsew",
+        )
+
+        log_scroll = ttk.Scrollbar(
+            log_frame,
+            orient="vertical",
+            command=log_text.yview,
+        )
+
+        log_scroll.grid(
+            row=0,
+            column=1,
+            sticky="ns",
+        )
+
+        log_text.configure(
+            yscrollcommand=log_scroll.set
+        )
+
+        ttk.Label(
+            body,
+            textvariable=status_var,
+        ).grid(
+            row=8,
+            column=0,
+            columnspan=3,
+            sticky="ew",
+        )
+
+        running = {
+            "value": False
+        }
+
+        def append_log(
+            text_value,
+        ):
+            log_text.insert(
+                tk.END,
+                text_value
+                + (
+                    ""
+                    if text_value.endswith("\n")
+                    else "\n"
+                ),
+            )
+
+            log_text.see(
+                tk.END
+            )
+
+        def poll_log():
+            try:
+                while True:
+                    item = log_queue.get_nowait()
+
+                    if item[0] == "line":
+                        append_log(
+                            item[1]
+                        )
+
+                    elif item[0] == "status":
+                        status_var.set(
+                            item[1]
+                        )
+
+                    elif item[0] == "done":
+                        running["value"] = False
+                        status_var.set(
+                            item[1]
+                        )
+
+            except queue.Empty:
+                pass
+
+            if window.winfo_exists():
+                window.after(
+                    100,
+                    poll_log,
+                )
+
+        def printable_ascii95(
+            text_value,
+        ):
+            return all(
+                32 <= ord(ch) <= 126
+                for ch in text_value
+            )
+
+        def source_files(
+            source: Path,
+        ):
+            if source.is_file():
+                return [
+                    source
+                ]
+
+            allowed = {
+                ".py",
+                ".txt",
+                ".md",
+                ".ps1",
+                ".bat",
+                ".cmd",
+                ".c",
+                ".h",
+                ".cpp",
+                ".hpp",
+                ".js",
+                ".ts",
+            }
+
+            skip = {
+                ".git",
+                "__pycache__",
+                ".venv",
+                "venv",
+                "node_modules",
+                "site-packages",
+                "dist",
+                "build",
+            }
+
+            result = []
+
+            for directory, dirnames, filenames in os.walk(
+                source
+            ):
+                dirnames[:] = [
+                    name
+                    for name in dirnames
+                    if name not in skip
+                    and not name.startswith(".")
+                ]
+
+                for filename in filenames:
+                    path = Path(
+                        directory
+                    ) / filename
+
+                    if path.suffix.lower() in allowed:
+                        result.append(
+                            path
+                        )
+
+            result.sort(
+                key=lambda p: str(p).lower()
+            )
+
+            return result
+
+        def build_dataset_file():
+            source_text = source_var.get().strip()
+
+            if not source_text:
+                raise ValueError(
+                    "Choose a source file or folder, or choose an existing Evidence JSONL."
+                )
+
+            source = Path(
+                source_text
+            ).expanduser().resolve()
+
+            if not source.exists():
+                raise FileNotFoundError(
+                    source
+                )
+
+            root = (
+                source
+                if source.is_dir()
+                else source.parent
+            )
+
+            output_root = Path(
+                output_root_var.get().strip()
+            ).expanduser().resolve()
+
+            output_root.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            dataset_path = (
+                output_root
+                / "generated_evidence.jsonl"
+            )
+
+            files = source_files(
+                source
+            )
+
+            if not files:
+                raise ValueError(
+                    "No supported source files were found."
+                )
+
+            dataset_name = (
+                source.name
+                if source.name
+                else "local-source"
+            )
+
+            objective = (
+                objective_var.get()
+            )
+
+            record_count = 0
+            character_count = 0
+
+            with dataset_path.open(
+                "w",
+                encoding="utf-8",
+                newline="\n",
+            ) as out:
+                for path in files:
+                    try:
+                        relative = str(
+                            path.relative_to(
+                                root
+                            )
+                        )
+                    except ValueError:
+                        relative = path.name
+
+                    with path.open(
+                        "r",
+                        encoding="utf-8",
+                    ) as src:
+                        for line_number, raw in enumerate(
+                            src,
+                            1,
+                        ):
+                            text_value = raw.rstrip(
+                                "\r\n"
+                            )
+
+                            if not text_value:
+                                continue
+
+                            if not printable_ascii95(
+                                text_value
+                            ):
+                                bad = next(
+                                    (
+                                        (
+                                            index,
+                                            ch,
+                                            ord(ch),
+                                        )
+                                        for index, ch in enumerate(
+                                            text_value
+                                        )
+                                        if not 32 <= ord(ch) <= 126
+                                    ),
+                                    None,
+                                )
+
+                                raise ValueError(
+                                    f"{path}:{line_number} contains non-ASCII95 data "
+                                    f"at character {bad}; no implicit normalization was performed."
+                                )
+
+                            record = {
+                                "id": (
+                                    f"{relative}:{line_number}"
+                                ),
+                                "dataset": dataset_name,
+                                "objective": objective,
+                                "text": text_value,
+                                "provenance": {
+                                    "source_file": relative,
+                                    "line_number": line_number,
+                                },
+                            }
+
+                            out.write(
+                                json.dumps(
+                                    record,
+                                    ensure_ascii=False,
+                                )
+                                + "\n"
+                            )
+
+                            record_count += 1
+                            character_count += len(
+                                text_value
+                            )
+
+            if record_count == 0:
+                raise ValueError(
+                    "No nonempty evidence records were produced."
+                )
+
+            dataset_var.set(
+                str(dataset_path)
+            )
+
+            append_log(
+                f"DATASET BUILT: {dataset_path}"
+            )
+
+            append_log(
+                f"records={record_count} characters={character_count} objective={objective}"
+            )
+
+            return dataset_path
+
+        def run_subprocess(
+            arguments,
+            label,
+        ):
+            log_queue.put(
+                (
+                    "line",
+                    "\n=== "
+                    + label
+                    + " ===",
+                )
+            )
+
+            log_queue.put(
+                (
+                    "line",
+                    subprocess.list2cmdline(
+                        [
+                            str(x)
+                            for x in arguments
+                        ]
+                    ),
+                )
+            )
+
+            process = subprocess.Popen(
+                [
+                    str(x)
+                    for x in arguments
+                ],
+                cwd=str(
+                    HERE
+                ),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+            )
+
+            assert process.stdout is not None
+
+            for line in process.stdout:
+                log_queue.put(
+                    (
+                        "line",
+                        line.rstrip(
+                            "\n"
+                        ),
+                    )
+                )
+
+            code = process.wait()
+
+            if code != 0:
+                raise RuntimeError(
+                    f"{label} failed with exit code {code}"
+                )
+
+        def require_base_files():
+            for path, label in (
+                (
+                    Path(
+                        compiler_var.get()
+                    ),
+                    "weight compiler",
+                ),
+                (
+                    Path(
+                        workbook_var.get()
+                    ),
+                    "canonical workbook",
+                ),
+                (
+                    Path(
+                        architecture_var.get()
+                    ),
+                    "control architecture",
+                ),
+            ):
+                if not path.exists():
+                    raise FileNotFoundError(
+                        f"{label}: {path}"
+                    )
+
+        def create_run_directory():
+            output_root = Path(
+                output_root_var.get().strip()
+            ).expanduser().resolve()
+
+            output_root.mkdir(
+                parents=True,
+                exist_ok=True,
+            )
+
+            stamp = datetime.datetime.now().strftime(
+                "%Y%m%d_%H%M%S"
+            )
+
+            run_dir = (
+                output_root
+                / f"run_{stamp}"
+            )
+
+            counter = 1
+
+            while run_dir.exists():
+                run_dir = (
+                    output_root
+                    / f"run_{stamp}_{counter}"
+                )
+                counter += 1
+
+            return run_dir
+
+        def do_inspect():
+            require_base_files()
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "inspect",
+                    workbook_var.get(),
+                ],
+                "INSPECT CANONICAL 437 MATRIX",
+            )
+
+        def do_compile():
+            require_base_files()
+
+            dataset_text = dataset_var.get().strip()
+
+            if dataset_text:
+                dataset = Path(
+                    dataset_text
+                ).expanduser().resolve()
+            else:
+                dataset = build_dataset_file()
+
+            if not dataset.exists():
+                raise FileNotFoundError(
+                    dataset
+                )
+
+            run_dir = create_run_directory()
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "compile",
+                    "--dataset",
+                    str(dataset),
+                    "--architecture",
+                    architecture_var.get(),
+                    "--output",
+                    str(run_dir),
+                ],
+                "COMPILE WEIGHTS",
+            )
+
+            run_dir_holder[
+                "path"
+            ] = run_dir
+
+            return run_dir
+
+        def do_verify(
+            run_dir=None,
+        ):
+            require_base_files()
+
+            if run_dir is None:
+                run_dir = run_dir_holder[
+                    "path"
+                ]
+
+            if run_dir is None:
+                value = filedialog.askopenfilename(
+                    parent=window,
+                    title="Select weights.npz",
+                    filetypes=[
+                        (
+                            "NPZ weights",
+                            "*.npz",
+                        )
+                    ],
+                )
+
+                if not value:
+                    raise ValueError(
+                        "No weights file selected."
+                    )
+
+                weights = Path(
+                    value
+                )
+
+            else:
+                weights = (
+                    Path(run_dir)
+                    / "weights.npz"
+                )
+
+            if not weights.exists():
+                raise FileNotFoundError(
+                    weights
+                )
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "verify",
+                    str(weights),
+                ],
+                "VERIFY WEIGHTS",
+            )
+
+        def launch(
+            operation,
+            label,
+        ):
+            if running[
+                "value"
+            ]:
+                messagebox.showinfo(
+                    "Run active",
+                    "A model-generator operation is already running.",
+                    parent=window,
+                )
+                return
+
+            running[
+                "value"
+            ] = True
+
+            status_var.set(
+                label
+            )
+
+            def worker():
+                try:
+                    operation()
+
+                    log_queue.put(
+                        (
+                            "done",
+                            label
+                            + " — DONE",
+                        )
+                    )
+
+                except Exception as exc:
+                    log_queue.put(
+                        (
+                            "line",
+                            "ERROR: "
+                            + str(exc),
+                        )
+                    )
+
+                    log_queue.put(
+                        (
+                            "done",
+                            label
+                            + " — FAILED",
+                        )
+                    )
+
+            threading.Thread(
+                target=worker,
+                daemon=True,
+            ).start()
+
+        def build_only():
+            path = build_dataset_file()
+            append_log(
+                "READY DATASET: "
+                + str(path)
+            )
+
+        def clean_run():
+            require_base_files()
+
+            dataset_text = dataset_var.get().strip()
+
+            if dataset_text:
+                dataset = Path(
+                    dataset_text
+                ).expanduser().resolve()
+
+                if not dataset.exists():
+                    raise FileNotFoundError(
+                        dataset
+                    )
+
+            else:
+                dataset = build_dataset_file()
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "inspect",
+                    workbook_var.get(),
+                ],
+                "STEP 1 — INSPECT CANONICAL 437 MATRIX",
+            )
+
+            run_dir = create_run_directory()
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "compile",
+                    "--dataset",
+                    str(dataset),
+                    "--architecture",
+                    architecture_var.get(),
+                    "--output",
+                    str(run_dir),
+                ],
+                "STEP 2 — COMPILE WEIGHTS",
+            )
+
+            run_dir_holder[
+                "path"
+            ] = run_dir
+
+            weights = (
+                run_dir
+                / "weights.npz"
+            )
+
+            run_subprocess(
+                [
+                    sys.executable,
+                    compiler_var.get(),
+                    "verify",
+                    str(weights),
+                ],
+                "STEP 3 — VERIFY WEIGHTS",
+            )
+
+            append_log(
+                "\nOUTPUT:"
+            )
+
+            append_log(
+                str(run_dir)
+            )
+
+            append_log(
+                "weights.npz"
+            )
+
+            append_log(
+                "compile_report.json"
+            )
+
+            status_var.set(
+                "ONE CLEAN RUN — VERIFIED"
+            )
+
+        ttk.Button(
+            controls,
+            text="Build Dataset",
+            command=lambda: launch(
+                build_only,
+                "BUILD DATASET",
+            ),
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+        ttk.Button(
+            controls,
+            text="Inspect 437 Matrix",
+            command=lambda: launch(
+                do_inspect,
+                "INSPECT MATRIX",
+            ),
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+        ttk.Button(
+            controls,
+            text="Compile Weights",
+            command=lambda: launch(
+                do_compile,
+                "COMPILE WEIGHTS",
+            ),
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+        ttk.Button(
+            controls,
+            text="Verify Weights",
+            command=lambda: launch(
+                do_verify,
+                "VERIFY WEIGHTS",
+            ),
+        ).pack(
+            side="left",
+            padx=(0, 6),
+        )
+
+        ttk.Button(
+            controls,
+            text="ONE CLEAN RUN",
+            command=lambda: launch(
+                clean_run,
+                "ONE CLEAN RUN",
+            ),
+        ).pack(
+            side="right",
+        )
+
+        poll_log()
 
     def choose_scan_root(
         self,
