@@ -36,6 +36,7 @@ import importlib.util
 import os
 import shlex
 import subprocess
+import sys
 import tkinter as tk
 
 from pathlib import Path
@@ -247,6 +248,10 @@ def load_compiler():
     module = importlib.util.module_from_spec(
         spec
     )
+
+    # dataclasses resolves annotations through sys.modules while the
+    # imported module is executing. Register it before exec_module().
+    sys.modules[spec.name] = module
 
     spec.loader.exec_module(
         module
