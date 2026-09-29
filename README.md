@@ -181,3 +181,38 @@ Pinned commit: `27411dc16e3cb7e286bf3eec9708dae88f62ebc4`.
 Extracted from `tools/compile_all_objectives_254.py` with the required objective definitions from `tools/254d_profiler_objectives_all_v2.py`. The workbook SHA-256 is `065cb5424ec0fd2d206de093e13ed2317f29a0d6a1eda837df1a9d46f81506ab`.
 
 Copyright © 2026 Nathan / Nate Soundz. Compiled Intelligence Lab.
+
+
+## Real canonical 437 build path
+
+The repository now contains a strict real-data path for the canonical registry.
+It preserves annotations before numerical projection and refuses to manufacture
+missing dimensions.
+
+Primary files:
+
+- `TARGET_FREE_PYTORCH_IMPLEMENTATION_CONTRACT.md`
+- `REAL_LAYER1_DATASET_AND_BUILD.md`
+- `LAYER2_COMPILE_CONTRACT.md`
+- `data/registry_contract.json`
+- `data/registry_dimensions.tsv`
+- `data/binding_manifest.json`
+- `tools/assemble_real_dataset.py`
+- `tools/project_scalar_evidence.py`
+- `tools/build_registry_npz.py`
+- `tools/target_free_torch.py`
+- `tools/build_real_layer1.py`
+
+From the repository root on the machine containing
+`%USERPROFILE%\\Downloads\\webster_full_lexicon.sqlite`, the strict build is:
+
+```powershell
+python .\tools\build_real_layer1.py --out "$env:USERPROFILE\Downloads\ascii95_real_layer1"
+```
+
+The command first creates the maximum provenance-preserving arena and a
+437-dimension coverage report. If any required dimension is unresolved, it
+stops before publishing geometry. Once all 437 dimensions have warranted
+projection coverage, the same command continues through frozen geometry,
+target-free attention, FFN, serialization verification, and the layer-one
+runtime artifact.
