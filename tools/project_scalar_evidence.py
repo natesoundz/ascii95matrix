@@ -1,0 +1,591 @@
+#!/usr/bin/env python3
+"""Project warranted real evidence into the scalar g[i,k] interface.
+
+This is intentionally strict. It fills only measurements whose numeric meaning
+is explicit and deterministic. Typed/category/relation fields without a
+declared scalar projection remain NaN and are reported, never coerced to zero.
+
+The resulting shard format matches relational_compiler.py:
+  y         int16   [N]      observed ASCII code
+  g         float64 [N,437]  valid scalar or NaN
+  w         float64 [N]      evidence weight
+  source_id str     [N]      occurrence trace id
+
+A strict full-437 build fails if any eligible dimension has zero warranted
+numeric coverage. --allow-incomplete permits writing diagnostic shards but does
+not make them valid full-437 compiler input.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import math
+import re
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Iterator
+
+import numpy as np
+
+ASCII_MIN = 32
+ASCII_MAX = 126
+V = 95
+D = 437
+
+
+def sha256_file(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for b in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(b)
+    return h.hexdigest()
+
+
+def iter_jsonl(path: Path) -> Iterator[dict]:
+    with path.open(encoding="utf-8") as f:
+        for line_number, line in enumerate(f, 1):
+            if not line.strip():
+                continue
+            obj = json.loads(line)
+            if not isinstance(obj, dict):
+                raise ValueError(f"{path}:{line_number}: expected JSON object")
+            yield obj
+
+
+def word_span(text: str, position: int) -> tuple[int, int]:
+    if not text[position].isalnum() and text[position] not in "_'":
+        return position, position + 1
+    left = position
+    right = position + 1
+    while left > 0 and (text[left - 1].isalnum() or text[left - 1] in "_'"):
+        left -= 1
+    while right < len(text) and (text[right].isalnum() or text[right] in "_'"):
+        right += 1
+    return left, right
+
+
+def repetition_count(text: str, position: int) -> int:
+    ch = text[position]
+    left = position
+    right = position + 1
+    while left > 0 and text[left - 1] == ch:
+        left -= 1
+    while right < len(text) and text[right] == ch:
+        right += 1
+    return right - left
+
+
+class CorpusStats:
+    def __init__(self) -> None:
+        self.unigram = np.zeros(V, dtype=np.int64)
+        self.bigram = np.zeros((V, V), dtype=np.int64)
+        self.trigram = defaultdict(Counter)
+        self.initial_word = np.zeros(V, dtype=np.int64)
+        self.medial_word = np.zeros(V, dtype=np.int64)
+        self.final_word = np.zeros(V, dtype=np.int64)
+        self.initial_sentence = np.zeros(V, dtype=np.int64)
+        self.final_sentence = np.zeros(V, dtype=np.int64)
+        self.total = 0
+
+    def add(self, text: str) -> None:
+        ids = np.fromiter((ord(c) - ASCII_MIN for c in text), dtype=np.int16)
+        self.total += len(ids)
+        if len(ids):
+            self.initial_sentence[int(ids[0])] += 1
+            self.final_sentence[int(ids[-1])] += 1
+        for i, c in enumerate(ids.tolist()):
+            self.unigram[c] += 1
+            if i:
+                self.bigram[int(ids[i - 1]), c] += 1
+            if i >= 2:
+                self.trigram[(int(ids[i - 2]), int(ids[i - 1]))][c] += 1
+
+        for m in re.finditer(r"[A-Za-z0-9_']+", text):
+            a, b = m.span()
+            if a < b:
+                self.initial_word[ord(text[a]) - ASCII_MIN] += 1
+                self.final_word[ord(text[b - 1]) - ASCII_MIN] += 1
+                for p in range(a + 1, b - 1):
+                    self.medial_word[ord(text[p]) - ASCII_MIN] += 1
+
+    def next_entropy(self, c: int) -> float:
+        row = self.bigram[c].astype(np.float64)
+        total = float(row.sum())
+        if total <= 0.0:
+            return math.nan
+        p = row[row > 0] / total
+        return float(-(p * np.log2(p)).sum())
+
+    def previous_entropy(self, c: int) -> float:
+        col = self.bigram[:, c].astype(np.float64)
+        total = float(col.sum())
+        if total <= 0.0:
+            return math.nan
+        p = col[col > 0] / total
+        return float(-(p * np.log2(p)).sum())
+
+
+def validate_record(record: dict) -> tuple[str, list[int]]:
+    text = record.get("text")
+    if not isinstance(text, str) or not text:
+        raise ValueError("record text must be nonempty string")
+    if any(not ASCII_MIN <= ord(c) <= ASCII_MAX for c in text):
+        raise ValueError("record text is not literal printable ASCII95")
+    positions = record.get("ground_truth_positions")
+    if positions is None:
+        positions = list(range(len(text)))
+    if (
+        not isinstance(positions, list)
+        or any(type(x) is not int for x in positions)
+        or positions != sorted(set(positions))
+        or any(x < 0 or x >= len(text) for x in positions)
+    ):
+        raise ValueError("invalid ground_truth_positions")
+    return text, positions
+
+
+def corpus_pass(records: Path) -> tuple[CorpusStats, int, int]:
+    stats = CorpusStats()
+    record_count = 0
+    truth_count = 0
+    for record in iter_jsonl(records):
+        text, positions = validate_record(record)
+        stats.add(text)
+        record_count += 1
+        truth_count += len(positions)
+    if truth_count == 0:
+        raise ValueError("no ground-truth positions")
+    return stats, record_count, truth_count
+
+
+def index_dimensions(registry: dict) -> tuple[list[dict], dict[str, int]]:
+    dims = registry["dimensions"]
+    if len(dims) != D:
+        raise ValueError(f"expected {D} registry dimensions")
+    by_id = {d["id"]: int(d["index"]) for d in dims}
+    if len(by_id) != D:
+        raise ValueError("dimension IDs are not unique")
+    return dims, by_id
+
+
+def set_if_present(g: np.ndarray, by_id: dict[str, int], key: str, value: float) -> None:
+    k = by_id.get(key)
+    if k is not None and math.isfinite(value):
+        g[k] = value
+
+
+def apply_fixed_status(g: np.ndarray, dimensions: list[dict], char_index: int) -> None:
+    for d in dimensions:
+        status = d["status_by_ascii"][char_index]
+        k = int(d["index"])
+        if status == "1":
+            g[k] = 1.0
+        elif status == "0":
+            g[k] = 0.0
+        # X, K and all deferred/typed statuses deliberately remain NaN.
+
+
+def apply_numeric_facts(g: np.ndarray, by_id: dict[str, int], ch: str) -> None:
+    if not ch.isdigit():
+        return
+    value = float(ord(ch) - ord("0"))
+    for key in (
+        "character_identity.numeric_value",
+        "numeric.decimal.numeric_value",
+        "numeric.decimal.integer",
+        "numeric.decimal.digit_rank",
+    ):
+        set_if_present(g, by_id, key, value)
+
+
+def apply_orthographic(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    text: str,
+    p: int,
+) -> None:
+    n = len(text)
+    a, b = word_span(text, p)
+    wl = b - a
+    wp = p - a
+
+    set_if_present(g, by_id, "orthographic.absolute_character_position", float(p))
+    set_if_present(
+        g,
+        by_id,
+        "orthographic.relative_word_position",
+        0.0 if wl <= 1 else float(wp / (wl - 1)),
+    )
+    set_if_present(
+        g,
+        by_id,
+        "orthographic.relative_sentence_position",
+        0.0 if n <= 1 else float(p / (n - 1)),
+    )
+    set_if_present(g, by_id, "orthographic.word_initial", float(p == a))
+    set_if_present(g, by_id, "orthographic.word_medial", float(a < p < b - 1))
+    set_if_present(g, by_id, "orthographic.word_final", float(p == b - 1))
+    set_if_present(g, by_id, "orthographic.sentence_initial", float(p == 0))
+    set_if_present(g, by_id, "orthographic.sentence_medial", float(0 < p < n - 1))
+    set_if_present(g, by_id, "orthographic.sentence_final", float(p == n - 1))
+    # records.jsonl currently stores one physical line per local-file record.
+    set_if_present(g, by_id, "orthographic.line_initial", float(p == 0))
+    set_if_present(g, by_id, "orthographic.line_final", float(p == n - 1))
+    set_if_present(g, by_id, "orthographic.preceded_by_space", float(p > 0 and text[p - 1] == " "))
+    set_if_present(g, by_id, "orthographic.followed_by_space", float(p + 1 < n and text[p + 1] == " "))
+    set_if_present(g, by_id, "orthographic.distance_to_left_boundary", float(wp))
+    set_if_present(g, by_id, "orthographic.distance_to_right_boundary", float(b - p - 1))
+    set_if_present(g, by_id, "orthographic.word_length", float(wl))
+    rc = repetition_count(text, p)
+    set_if_present(g, by_id, "orthographic.repeated_character_status", float(rc > 1))
+    set_if_present(g, by_id, "orthographic.character_repetition_count", float(rc))
+
+
+def apply_corpus_stats(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    stats: CorpusStats,
+    text: str,
+    p: int,
+) -> None:
+    c = ord(text[p]) - ASCII_MIN
+    total = max(1, stats.total)
+    set_if_present(
+        g,
+        by_id,
+        "corpus.unigram_frequency",
+        float(stats.unigram[c] / total),
+    )
+
+    ent = stats.next_entropy(c)
+    if math.isfinite(ent):
+        set_if_present(g, by_id, "corpus.next_character_entropy", ent)
+
+    # The registry's conditional entropy is context-dependent. Use the
+    # previous-character distribution of the current target as the warranted
+    # reverse conditional entropy, and preserve this declared method in report.
+    prev_ent = stats.previous_entropy(c)
+    if math.isfinite(prev_ent):
+        set_if_present(g, by_id, "corpus.conditional_entropy", prev_ent)
+
+    denom = max(1, int(stats.unigram[c]))
+    set_if_present(
+        g,
+        by_id,
+        "corpus.word_initial_frequency",
+        float(stats.initial_word[c] / denom),
+    )
+    set_if_present(
+        g,
+        by_id,
+        "corpus.word_medial_frequency",
+        float(stats.medial_word[c] / denom),
+    )
+    set_if_present(
+        g,
+        by_id,
+        "corpus.word_final_frequency",
+        float(stats.final_word[c] / denom),
+    )
+    set_if_present(
+        g,
+        by_id,
+        "corpus.sentence_initial_frequency",
+        float(stats.initial_sentence[c] / denom),
+    )
+    set_if_present(
+        g,
+        by_id,
+        "corpus.sentence_final_frequency",
+        float(stats.final_sentence[c] / denom),
+    )
+
+
+def apply_observed_neighbor_strengths(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    stats: CorpusStats,
+    text: str,
+    p: int,
+) -> None:
+    c = ord(text[p]) - ASCII_MIN
+    if p + 1 < len(text):
+        r = ord(text[p + 1]) - ASCII_MIN
+        row_total = float(stats.bigram[c].sum())
+        if row_total > 0:
+            set_if_present(
+                g,
+                by_id,
+                "corpus.next_character_probability",
+                float(stats.bigram[c, r] / row_total),
+            )
+    if p > 0:
+        left = ord(text[p - 1]) - ASCII_MIN
+        col_total = float(stats.bigram[:, c].sum())
+        if col_total > 0:
+            set_if_present(
+                g,
+                by_id,
+                "corpus.previous_character_probability",
+                float(stats.bigram[left, c] / col_total),
+            )
+
+
+def apply_evidence_statistics(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    stats: CorpusStats,
+    c: int,
+) -> None:
+    obs = float(stats.unigram[c])
+    total = float(max(1, stats.total))
+    set_if_present(g, by_id, "evidence.observation_count", obs)
+    set_if_present(g, by_id, "evidence.support_count", obs)
+    set_if_present(g, by_id, "evidence.contradiction_count", 0.0)
+    set_if_present(g, by_id, "evidence.sample_size", total)
+    set_if_present(g, by_id, "evidence.coverage", float(obs > 0.0))
+    set_if_present(g, by_id, "evidence.occurrence_rate", obs / total)
+    set_if_present(g, by_id, "source_class.corpus_derived_statistic", 1.0)
+    set_if_present(
+        g,
+        by_id,
+        "source_class.deterministic_extraction_from_published_raw_data",
+        1.0,
+    )
+
+
+def source_id_for(record: dict, position: int) -> str:
+    return f"{record.get('dataset','')}:{record.get('id','')}:{position}"
+
+
+def write_shard(
+    out_dir: Path,
+    shard_index: int,
+    y: list[int],
+    g: list[np.ndarray],
+    w: list[float],
+    source_ids: list[str],
+) -> Path:
+    path = out_dir / f"evidence_{shard_index:06d}.npz"
+    np.savez_compressed(
+        path,
+        y=np.asarray(y, dtype=np.int16),
+        g=np.asarray(g, dtype=np.float64),
+        w=np.asarray(w, dtype=np.float64),
+        source_id=np.asarray(source_ids, dtype=str),
+    )
+    return path
+
+
+def build(
+    records: Path,
+    registry_path: Path,
+    out_dir: Path,
+    shard_size: int,
+    allow_incomplete: bool,
+) -> dict:
+    registry = json.loads(registry_path.read_text(encoding="utf-8"))
+    dimensions, by_id = index_dimensions(registry)
+    stats, record_count, truth_count = corpus_pass(records)
+
+    out_dir.mkdir(parents=True, exist_ok=True)
+    for old in out_dir.glob("evidence_*.npz"):
+        old.unlink()
+
+    valid_counts = np.zeros(D, dtype=np.int64)
+    char_valid = np.zeros((V, D), dtype=np.int64)
+    min_value = np.full(D, np.inf, dtype=np.float64)
+    max_value = np.full(D, -np.inf, dtype=np.float64)
+
+    y_buf: list[int] = []
+    g_buf: list[np.ndarray] = []
+    w_buf: list[float] = []
+    source_buf: list[str] = []
+    shards: list[dict] = []
+    shard_index = 0
+    occurrences = 0
+
+    def flush() -> None:
+        nonlocal shard_index
+        if not y_buf:
+            return
+        path = write_shard(out_dir, shard_index, y_buf, g_buf, w_buf, source_buf)
+        shards.append(
+            {
+                "path": path.name,
+                "sha256": sha256_file(path),
+                "occurrences": len(y_buf),
+            }
+        )
+        shard_index += 1
+        y_buf.clear()
+        g_buf.clear()
+        w_buf.clear()
+        source_buf.clear()
+
+    for record in iter_jsonl(records):
+        text, positions = validate_record(record)
+        for p in positions:
+            code = ord(text[p])
+            c = code - ASCII_MIN
+            row = np.full(D, np.nan, dtype=np.float64)
+            apply_fixed_status(row, dimensions, c)
+            apply_numeric_facts(row, by_id, text[p])
+            apply_orthographic(row, by_id, text, p)
+            apply_corpus_stats(row, by_id, stats, text, p)
+            apply_observed_neighbor_strengths(row, by_id, stats, text, p)
+            apply_evidence_statistics(row, by_id, stats, c)
+
+            # Enforce canonical X/K boundaries after every resolver.
+            for d in dimensions:
+                status = d["status_by_ascii"][c]
+                if status in ("X", "K"):
+                    row[int(d["index"])] = np.nan
+
+            valid = np.isfinite(row)
+            valid_counts[valid] += 1
+            char_valid[c, valid] += 1
+            if np.any(valid):
+                min_value[valid] = np.minimum(min_value[valid], row[valid])
+                max_value[valid] = np.maximum(max_value[valid], row[valid])
+
+            y_buf.append(code)
+            g_buf.append(row)
+            w_buf.append(1.0)
+            source_buf.append(source_id_for(record, p))
+            occurrences += 1
+            if len(y_buf) >= shard_size:
+                flush()
+
+    flush()
+
+    per_dimension = []
+    zero_coverage = []
+    partial_coverage = []
+    for d in dimensions:
+        k = int(d["index"])
+        eligible = np.asarray(
+            [s not in ("X", "K") for s in d["status_by_ascii"]],
+            dtype=bool,
+        )
+        expected_chars = int(eligible.sum())
+        covered_chars = int(np.count_nonzero(char_valid[:, k] > 0))
+        item = {
+            "index": k,
+            "id": d["id"],
+            "interaction": d["interaction"],
+            "defer_scope": d["defer_scope"],
+            "valid_occurrence_measurements": int(valid_counts[k]),
+            "eligible_characters": expected_chars,
+            "covered_characters": covered_chars,
+            "character_coverage_fraction": (
+                1.0 if expected_chars == 0 else covered_chars / expected_chars
+            ),
+            "minimum": None if not math.isfinite(min_value[k]) else float(min_value[k]),
+            "maximum": None if not math.isfinite(max_value[k]) else float(max_value[k]),
+        }
+        per_dimension.append(item)
+        if expected_chars > 0 and valid_counts[k] == 0:
+            zero_coverage.append({"index": k, "id": d["id"]})
+        elif expected_chars > 0 and covered_chars < expected_chars:
+            partial_coverage.append(
+                {
+                    "index": k,
+                    "id": d["id"],
+                    "eligible_characters": expected_chars,
+                    "covered_characters": covered_chars,
+                }
+            )
+
+    report = {
+        "format": "ascii95-scalar-evidence-projection-v1",
+        "records_file": str(records.resolve()),
+        "records_sha256": sha256_file(records),
+        "registry_file": str(registry_path.resolve()),
+        "registry_sha256": sha256_file(registry_path),
+        "record_count": record_count,
+        "ground_truth_occurrences": truth_count,
+        "projected_occurrences": occurrences,
+        "dimension_count": D,
+        "shards": shards,
+        "strict_full_437_ready": len(zero_coverage) == 0 and len(partial_coverage) == 0,
+        "zero_coverage_dimensions": zero_coverage,
+        "partial_character_coverage_dimensions": partial_coverage,
+        "per_dimension": per_dimension,
+        "declared_projection_methods": {
+            "registry_1_0": "literal fixed boolean evidence",
+            "numeric_value": "literal decimal digit value",
+            "orthographic": "deterministic measurement from literal occurrence/span",
+            "corpus_unigram_and_position": "frequency over exact frozen records snapshot",
+            "next_previous_probability": "observed adjacent pair conditional probability over exact snapshot",
+            "next_entropy": "Shannon entropy of next-character distribution",
+            "conditional_entropy": "reverse previous-character conditional entropy for current character",
+            "evidence_counts": "counts/coverage over exact frozen snapshot",
+        },
+        "unresolved_policy": "NaN, never zero",
+        "note": (
+            "This projector intentionally leaves typed categorical/relation, "
+            "pronunciation-feature, acoustic, glyph/rendering, semantic, grammar, "
+            "programming and mathematical dimensions unresolved until their "
+            "explicit projection laws are added."
+        ),
+    }
+
+    (out_dir / "binding_coverage.json").write_text(
+        json.dumps(report, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+    if not report["strict_full_437_ready"] and not allow_incomplete:
+        raise RuntimeError(
+            "strict full-437 projection is incomplete; see binding_coverage.json"
+        )
+    return report
+
+
+def main() -> int:
+    p = argparse.ArgumentParser(description=__doc__)
+    p.add_argument("--records", type=Path, required=True)
+    p.add_argument(
+        "--registry",
+        type=Path,
+        default=Path("data/registry_contract.json"),
+    )
+    p.add_argument("--out", type=Path, required=True)
+    p.add_argument("--shard-size", type=int, default=100000)
+    p.add_argument("--allow-incomplete", action="store_true")
+    args = p.parse_args()
+    if args.shard_size <= 0:
+        raise SystemExit("--shard-size must be > 0")
+    try:
+        report = build(
+            args.records,
+            args.registry,
+            args.out,
+            args.shard_size,
+            args.allow_incomplete,
+        )
+    except (ValueError, OSError, RuntimeError, json.JSONDecodeError) as exc:
+        print(f"ERROR: {exc}")
+        return 1
+    print(
+        json.dumps(
+            {
+                "projected_occurrences": report["projected_occurrences"],
+                "shard_count": len(report["shards"]),
+                "strict_full_437_ready": report["strict_full_437_ready"],
+                "zero_coverage_dimension_count": len(report["zero_coverage_dimensions"]),
+                "partial_character_coverage_dimension_count": len(
+                    report["partial_character_coverage_dimensions"]
+                ),
+                "coverage_report": str(args.out / "binding_coverage.json"),
+            },
+            indent=2,
+        )
+    )
+    return 0 if report["strict_full_437_ready"] or args.allow_incomplete else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
