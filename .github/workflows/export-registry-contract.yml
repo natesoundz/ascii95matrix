@@ -1,0 +1,58 @@
+name: Export canonical registry contract
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/export_registry_contract.py"
+      - "data/Canonical_ASCII95_Attribute_Matrix_v1.xlsx"
+      - ".github/workflows/export-registry-contract.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Export workbook contract
+        run: python tools/export_registry_contract.py
+
+      - name: Show contract summary
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("data/registry_contract.json")
+          d=json.loads(p.read_text(encoding="utf-8"))
+          print("REGISTRY_CONTRACT")
+          print("characters=", d["vocabulary_size"])
+          print("dimensions=", d["dimension_count"])
+          print("status_counts=", d["global_status_counts"])
+          print("interaction_counts=", d["interaction_counts"])
+          print("defer_scope_counts=", d["defer_scope_counts"])
+          print("FIRST_20_DIMENSIONS")
+          for x in d["dimensions"][:20]:
+              print(x["index"], x["id"], "|", x["interaction"], "|", x["defer_scope"], "|", x["status_counts"])
+          PY
+
+      - name: Commit generated contract
+        run: |
+          if git diff --quiet -- data/registry_contract.json; then
+            echo "registry_contract.json already current"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/registry_contract.json
+          git commit -m "Generate canonical registry contract [skip ci]"
+          git push
