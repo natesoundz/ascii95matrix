@@ -1,0 +1,93 @@
+name: Validate real evidence pipeline
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tools/assemble_real_dataset.py"
+      - "tools/project_scalar_evidence.py"
+      - "tools/export_registry_contract.py"
+      - "tools/create_binding_manifest.py"
+      - "data/registry_contract.json"
+      - "data/binding_manifest.json"
+      - ".github/workflows/validate-real-evidence-pipeline.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install runtime dependency
+        run: python -m pip install -r requirements.txt
+
+      - name: Syntax check pipeline
+        run: |
+          python -m py_compile tools/assemble_real_dataset.py
+          python -m py_compile tools/project_scalar_evidence.py
+          python -m py_compile tools/export_registry_contract.py
+          python -m py_compile tools/create_binding_manifest.py
+          python -m py_compile relational_compiler.py
+
+      - name: Create real literal sample
+        run: |
+          mkdir -p .pipeline_sample
+          cat > .pipeline_sample/sample.py <<'PY'
+          def add(x: int, y: int) -> int:
+              return x + y
+          PY
+          cat > .pipeline_sample/sample.txt <<'TXT'
+          The dog chased the cat.
+          ASCII95 evidence stays literal.
+          TXT
+
+      - name: Assemble annotated arena
+        run: |
+          python tools/assemble_real_dataset.py             --no-lexicon-db             --corpus .pipeline_sample             --out .pipeline_arena
+
+      - name: Project warranted scalar evidence
+        run: |
+          python tools/project_scalar_evidence.py             --records .pipeline_arena/records.jsonl             --registry data/registry_contract.json             --out .pipeline_evidence             --allow-incomplete
+
+      - name: Verify diagnostic contract
+        run: |
+          python - <<'PY'
+          import json
+          import numpy as np
+          from pathlib import Path
+
+          arena = json.loads(Path(".pipeline_arena/manifest.json").read_text())
+          report = json.loads(Path(".pipeline_evidence/binding_coverage.json").read_text())
+          shards = sorted(Path(".pipeline_evidence").glob("evidence_*.npz"))
+
+          assert arena["counts"]["records"] >= 2
+          assert report["dimension_count"] == 437
+          assert report["projected_occurrences"] > 0
+          assert report["strict_full_437_ready"] is False
+          assert report["zero_coverage_dimensions"]
+          assert shards
+
+          total = 0
+          for path in shards:
+              with np.load(path, allow_pickle=False) as z:
+                  assert z["g"].shape[1] == 437
+                  assert z["y"].shape[0] == z["g"].shape[0]
+                  assert z["w"].shape[0] == z["g"].shape[0]
+                  assert z["source_id"].shape[0] == z["g"].shape[0]
+                  total += z["y"].shape[0]
+          assert total == report["projected_occurrences"]
+
+          print(json.dumps({
+              "records": arena["counts"]["records"],
+              "occurrences": report["projected_occurrences"],
+              "dimensions": report["dimension_count"],
+              "zero_coverage_dimensions": len(report["zero_coverage_dimensions"]),
+              "partial_character_coverage_dimensions": len(report["partial_character_coverage_dimensions"]),
+              "strict_full_437_ready": report["strict_full_437_ready"],
+          }, indent=2))
+          PY
