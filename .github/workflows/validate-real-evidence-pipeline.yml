@@ -32,6 +32,7 @@ jobs:
           python -m py_compile tools/project_scalar_evidence.py
           python -m py_compile tools/export_registry_contract.py
           python -m py_compile tools/create_binding_manifest.py
+          python -m py_compile tools/build_registry_npz.py
           python -m py_compile relational_compiler.py
 
       - name: Create real literal sample
@@ -49,6 +50,12 @@ jobs:
       - name: Assemble annotated arena
         run: |
           python tools/assemble_real_dataset.py             --no-lexicon-db             --corpus .pipeline_sample             --out .pipeline_arena
+
+      - name: Build compiler registry interface
+        run: |
+          python tools/build_registry_npz.py \
+            --contract data/registry_contract.json \
+            --out .pipeline_registry.npz
 
       - name: Project warranted scalar evidence
         run: |
