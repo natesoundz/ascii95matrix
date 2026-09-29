@@ -27,6 +27,9 @@ jobs:
       - name: Export workbook contract
         run: python tools/export_registry_contract.py
 
+      - name: Build explicit binding manifest
+        run: python tools/create_binding_manifest.py
+
       - name: Show contract summary
         run: |
           python - <<'PY'
@@ -47,8 +50,8 @@ jobs:
 
       - name: Commit generated contract
         run: |
-          git add -f data/registry_contract.json data/registry_dimensions.tsv
-          if git diff --cached --quiet -- data/registry_contract.json data/registry_dimensions.tsv; then
+          git add -f data/registry_contract.json data/registry_dimensions.tsv data/binding_manifest.json
+          if git diff --cached --quiet -- data/registry_contract.json data/registry_dimensions.tsv data/binding_manifest.json; then
             echo "registry_contract.json already current"
             exit 0
           fi
