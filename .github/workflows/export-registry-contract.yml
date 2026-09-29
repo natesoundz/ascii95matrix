@@ -47,12 +47,12 @@ jobs:
 
       - name: Commit generated contract
         run: |
-          if git diff --quiet -- data/registry_contract.json; then
+          git add -f data/registry_contract.json
+          if git diff --cached --quiet -- data/registry_contract.json; then
             echo "registry_contract.json already current"
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/registry_contract.json
           git commit -m "Generate canonical registry contract [skip ci]"
           git push
