@@ -1,0 +1,438 @@
+index	id	name	interaction	defer_scope	status_counts
+0	character_identity.character	character	KEY		K:95
+1	character_identity.ascii_integer	ASCII integer	KEY		K:95
+2	character_identity.unicode_code_point	Unicode code point	KEY		K:95
+3	character_identity.unicode_name	Unicode name	KEY		K:95
+4	character_identity.unicode_general_category	Unicode general category	GATE + DISCRIMINATE		V:95
+5	character_identity.script	script	DISCRIMINATE		V:95
+6	character_identity.alphabetic	alphabetic	GATE		0:43,1:52
+7	character_identity.uppercase	uppercase	DISCRIMINATE		0:26,1:26,X:43
+8	character_identity.lowercase	lowercase	DERIVED	derived from NOT uppercase within LETTERS	0:26,1:26,X:43
+9	character_identity.case_mapping	case mapping	RELATION	source character -> mapped character/string; mapping direction as required	R:52,X:43
+10	character_identity.case_fold_mapping	case-fold mapping	RELATION	source character -> folded character/string	R:52,X:43
+11	character_identity.digit_status	digit status	GATE		0:85,1:10
+12	character_identity.decimal_status	decimal status	DERIVED	derived from digit status over ASCII95	0:85,1:10
+13	character_identity.numeric_type	numeric type	STRUCTURAL	constant relevant Unicode numeric type over ASCII digits	S:10,X:85
+14	character_identity.numeric_value	numeric value	DISCRIMINATE		V:10,X:85
+15	character_identity.punctuation_status	punctuation status	GATE		0:72,1:23
+16	character_identity.symbol_status	symbol status	GATE		0:86,1:9
+17	character_identity.whitespace_status	whitespace status	GATE		0:94,1:1
+18	character_identity.math_status	math status	GATE	Unicode-derived intrinsic math property; does not gate math syntax roles	0:88,1:7
+19	character_identity.identifier_start	identifier-start status	GATE		0:43,1:52
+20	character_identity.identifier_continue	identifier-continue status	GATE		0:32,1:63
+21	character_identity.bidirectional_class	bidirectional class	DISCRIMINATE		V:95
+22	character_identity.bidirectional_mirrored	bidirectional mirrored	DISCRIMINATE		0:87,1:8
+23	character_identity.east_asian_width	East Asian width	DISCRIMINATE		V:95
+24	character_identity.line_break_class	line-break class	DISCRIMINATE		V:95
+25	character_identity.word_break_class	word-break class	DISCRIMINATE		V:95
+26	character_identity.sentence_break_class	sentence-break class	DISCRIMINATE		V:95
+27	character_identity.grapheme_break_class	grapheme-break class	DISCRIMINATE		V:95
+28	character_identity.decomposition_mapping	decomposition mapping	STRUCTURAL	empty over printable ASCII95	S:95
+29	character_identity.decomposition_type	decomposition type	STRUCTURAL	empty/not-applicable over printable ASCII95	S:95
+30	numeric.decimal.numeric_value	numeric value	DISCRIMINATE		V:10,X:85
+31	numeric.decimal.integer	integer	DERIVED	derived from numeric value	S:10,X:85
+32	numeric.decimal.zero	zero	DISCRIMINATE		0:9,1:1,X:85
+33	numeric.decimal.nonzero	nonzero	DERIVED	NOT zero within DIGITS	0:1,1:9,X:85
+34	numeric.decimal.positive	positive	DERIVED	same as nonzero within unsigned ASCII DIGITS	0:1,1:9,X:85
+35	numeric.decimal.even	even	DISCRIMINATE		0:5,1:5,X:85
+36	numeric.decimal.odd	odd	DERIVED	NOT even within DIGITS	0:5,1:5,X:85
+37	numeric.decimal.prime	prime	DISCRIMINATE		0:6,1:4,X:85
+38	numeric.decimal.composite	composite	DISCRIMINATE		0:6,1:4,X:85
+39	numeric.decimal.square	square	DISCRIMINATE		0:6,1:4,X:85
+40	numeric.decimal.digit_rank	digit rank	DERIVED	derived from numeric value	S:10,X:85
+41	numeric.decimal.binary_value	binary value	DERIVED	deterministic base-2 representation of numeric value	S:10,X:85
+42	numeric.hexadecimal.value	hexadecimal value	DEFER + DISCRIMINATE	defer to base-16 notation/context; values 0..15	E:22,X:73
+43	phonetic.phonetic_articulatory_general.syllabic	syllabic	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+44	phonetic.phonetic_articulatory_general.sonorant	sonorant	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+45	phonetic.phonetic_articulatory_general.consonantal	consonantal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+46	phonetic.phonetic_articulatory_general.continuant	continuant	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+47	phonetic.phonetic_articulatory_general.delayed_release	delayed release	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+48	phonetic.phonetic_articulatory_general.lateral	lateral	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+49	phonetic.phonetic_articulatory_general.nasal	nasal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+50	phonetic.phonetic_articulatory_general.strident	strident	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+51	phonetic.phonetic_articulatory_general.voice	voice	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+52	phonetic.phonetic_articulatory_general.spread_glottis	spread glottis	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+53	phonetic.phonetic_articulatory_general.constricted_glottis	constricted glottis	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+54	phonetic.phonetic_articulatory_general.anterior	anterior	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+55	phonetic.phonetic_articulatory_general.coronal	coronal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+56	phonetic.phonetic_articulatory_general.distributed	distributed	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+57	phonetic.phonetic_articulatory_general.labial	labial	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+58	phonetic.phonetic_articulatory_general.high	high	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+59	phonetic.phonetic_articulatory_general.low	low	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+60	phonetic.phonetic_articulatory_general.back	back	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+61	phonetic.phonetic_articulatory_general.round	round	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+62	phonetic.phonetic_articulatory_general.velaric	velaric	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+63	phonetic.phonetic_articulatory_general.tense	tense	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+64	phonetic.phonetic_articulatory_general.long	long	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+65	phonetic.vowel_tongue_body_position.close	close	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+66	phonetic.vowel_tongue_body_position.near_close	near-close	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+67	phonetic.vowel_tongue_body_position.close_mid	close-mid	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+68	phonetic.vowel_tongue_body_position.mid	mid	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+69	phonetic.vowel_tongue_body_position.open_mid	open-mid	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+70	phonetic.vowel_tongue_body_position.near_open	near-open	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+71	phonetic.vowel_tongue_body_position.open	open	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+72	phonetic.vowel_tongue_body_position.front	front	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+73	phonetic.vowel_tongue_body_position.near_front	near-front	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+74	phonetic.vowel_tongue_body_position.central	central	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+75	phonetic.vowel_tongue_body_position.near_back	near-back	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+76	phonetic.vowel_tongue_body_position.back	back	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+77	phonetic.vowel_tongue_body_position.raised	raised	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+78	phonetic.vowel_tongue_body_position.lowered	lowered	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+79	phonetic.vowel_tongue_body_position.centralized	centralized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+80	phonetic.vowel_tongue_body_position.advanced	advanced	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+81	phonetic.vowel_tongue_body_position.retracted	retracted	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+82	phonetic.vowel_tongue_body_position.advanced_tongue_root	advanced tongue root	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+83	phonetic.vowel_tongue_body_position.retracted_tongue_root	retracted tongue root	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+84	phonetic.vowel_tongue_body_position.rounded	rounded	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+85	phonetic.vowel_tongue_body_position.unrounded	unrounded	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by vowel realization	E:52,X:43
+86	phonetic.consonant_place_of_articulation.bilabial	bilabial	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+87	phonetic.consonant_place_of_articulation.labiodental	labiodental	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+88	phonetic.consonant_place_of_articulation.dental	dental	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+89	phonetic.consonant_place_of_articulation.alveolar	alveolar	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+90	phonetic.consonant_place_of_articulation.postalveolar	postalveolar	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+91	phonetic.consonant_place_of_articulation.retroflex	retroflex	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+92	phonetic.consonant_place_of_articulation.alveolo_palatal	alveolo-palatal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+93	phonetic.consonant_place_of_articulation.palatal	palatal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+94	phonetic.consonant_place_of_articulation.velar	velar	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+95	phonetic.consonant_place_of_articulation.uvular	uvular	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+96	phonetic.consonant_place_of_articulation.pharyngeal	pharyngeal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+97	phonetic.consonant_place_of_articulation.epiglottal	epiglottal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+98	phonetic.consonant_place_of_articulation.glottal	glottal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+99	phonetic.consonant_place_of_articulation.labial_velar	labial-velar	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+100	phonetic.consonant_place_of_articulation.anterior	anterior	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+101	phonetic.consonant_place_of_articulation.coronal	coronal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+102	phonetic.consonant_place_of_articulation.distributed	distributed	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+103	phonetic.consonant_place_of_articulation.dorsal	dorsal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+104	phonetic.consonant_place_of_articulation.labial	labial	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+105	phonetic.consonant_place_of_articulation.laryngeal	laryngeal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+106	phonetic.consonant_manner_of_articulation.stop	stop	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+107	phonetic.consonant_manner_of_articulation.plosive	plosive	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+108	phonetic.consonant_manner_of_articulation.nasal	nasal	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+109	phonetic.consonant_manner_of_articulation.trill	trill	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+110	phonetic.consonant_manner_of_articulation.tap	tap	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+111	phonetic.consonant_manner_of_articulation.flap	flap	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+112	phonetic.consonant_manner_of_articulation.fricative	fricative	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+113	phonetic.consonant_manner_of_articulation.sibilant	sibilant	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+114	phonetic.consonant_manner_of_articulation.affricate	affricate	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+115	phonetic.consonant_manner_of_articulation.approximant	approximant	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+116	phonetic.consonant_manner_of_articulation.lateral_approximant	lateral approximant	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+117	phonetic.consonant_manner_of_articulation.lateral_fricative	lateral fricative	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+118	phonetic.consonant_manner_of_articulation.click	click	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization; gated by consonant realization	E:52,X:43
+119	phonetic.laryngeal_phonation.voiced	voiced	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+120	phonetic.laryngeal_phonation.voiceless	voiceless	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+121	phonetic.laryngeal_phonation.aspirated	aspirated	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+122	phonetic.laryngeal_phonation.unaspirated	unaspirated	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+123	phonetic.laryngeal_phonation.breathy	breathy	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+124	phonetic.laryngeal_phonation.creaky	creaky	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+125	phonetic.laryngeal_phonation.glottalized	glottalized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+126	phonetic.laryngeal_phonation.spread_glottis	spread glottis	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+127	phonetic.laryngeal_phonation.constricted_glottis	constricted glottis	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+128	phonetic.secondary_articulation.labialized	labialized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+129	phonetic.secondary_articulation.palatalized	palatalized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+130	phonetic.secondary_articulation.velarized	velarized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+131	phonetic.secondary_articulation.pharyngealized	pharyngealized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+132	phonetic.secondary_articulation.nasalized	nasalized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+133	phonetic.secondary_articulation.centralized	centralized	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+134	phonetic.secondary_articulation.advanced	advanced	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+135	phonetic.secondary_articulation.retracted	retracted	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+136	phonetic.airstream.pulmonic	pulmonic	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+137	phonetic.airstream.ejective	ejective	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+138	phonetic.airstream.implosive	implosive	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+139	phonetic.airstream.velaric	velaric	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+140	phonetic.airstream.click	click	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+141	phonetic.phonetic_temporal_properties.short	short	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+142	phonetic.phonetic_temporal_properties.normal_length	normal length	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+143	phonetic.phonetic_temporal_properties.long	long	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+144	phonetic.phonetic_temporal_properties.extra_long	extra-long	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+145	phonetic.phonetic_temporal_properties.geminate	geminate	GATE + DEFER + DISCRIMINATE	defer to pronunciation realization	E:52,X:43
+146	pronunciation.possible_phoneme_realizations	possible phoneme realizations	DEFER + RELATION	pronunciation source; character/occurrence -> set(phone)	R:52,X:43
+147	pronunciation.phoneme_occurrence_frequency	phoneme occurrence frequency	RELATION + MODULATE	character × phone	R:52,X:43
+148	pronunciation.phoneme_conditional_probability	phoneme conditional probability	RELATION + MODULATE	conditioning context × character × phone	R:52,X:43
+149	pronunciation.articulatory_feature_probability	articulatory-feature probability	RELATION + MODULATE	character/phone × articulatory feature	R:52,X:43
+150	pronunciation.pronunciation_variant_frequency	pronunciation variant frequency	RELATION + MODULATE	character/lexical occurrence × pronunciation variant	R:52,X:43
+151	pronunciation.stress	stress	DEFER + DISCRIMINATE	pronunciation occurrence	E:52,X:43
+152	pronunciation.lexical_stress	lexical stress	DEFER + DISCRIMINATE	containing lexical pronunciation	E:52,X:43
+153	pronunciation.character_to_phone_distribution	character-to-phone distribution	RELATION + MODULATE	character × phone	R:52,X:43
+154	pronunciation.context_conditioned_character_to_phone_distribution	context-conditioned character-to-phone distribution	RELATION + MODULATE	context × character × phone	R:52,X:43
+155	acoustic.fundamental_frequency_f0	fundamental frequency F0	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+156	acoustic.first_formant_f1	first formant F1	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+157	acoustic.second_formant_f2	second formant F2	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+158	acoustic.third_formant_f3	third formant F3	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+159	acoustic.segment_duration	segment duration	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+160	acoustic.phoneme_duration	phoneme duration	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+161	acoustic.vowel_duration	vowel duration	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+162	acoustic.within_segment_temporal_position	within-segment temporal position	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+163	acoustic.speaker_normalized_formants	speaker-normalized formants	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+164	acoustic.formant_trajectory	formant trajectory	DEFER + MEASUREMENT	pronunciation/speaker/segment as required	M:52,X:43
+165	acoustic.f0_mean	F0 mean	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+166	acoustic.f0_variance	F0 variance	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+167	acoustic.f1_mean	F1 mean	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+168	acoustic.f1_variance	F1 variance	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+169	acoustic.f2_mean	F2 mean	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+170	acoustic.f2_variance	F2 variance	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+171	acoustic.f3_mean	F3 mean	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+172	acoustic.f3_variance	F3 variance	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+173	acoustic.f1_minimum	F1 minimum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+174	acoustic.f1_maximum	F1 maximum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+175	acoustic.f2_minimum	F2 minimum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+176	acoustic.f2_maximum	F2 maximum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+177	acoustic.f3_minimum	F3 minimum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+178	acoustic.f3_maximum	F3 maximum	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+179	acoustic.between_speaker_variance	between-speaker variance	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+180	acoustic.sex_conditioned_acoustic_distribution	sex-conditioned acoustic distribution	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+181	acoustic.age_conditioned_acoustic_distribution	age-conditioned acoustic distribution	DEFER + MODULATE	relevant pronunciation/population	U:52,X:43
+182	glyph.geometry.bounding_width	bounding width	DEFER + MEASUREMENT	font/rendering	M:95
+183	glyph.geometry.bounding_height	bounding height	DEFER + MEASUREMENT	font/rendering	M:95
+184	glyph.geometry.aspect_ratio	aspect ratio	DEFER + MEASUREMENT	font/rendering	M:95
+185	glyph.geometry.advance_width	advance width	DEFER + MEASUREMENT	font/rendering	M:95
+186	glyph.geometry.ink_area	ink area	DEFER + MEASUREMENT	font/rendering	M:95
+187	glyph.geometry.ink_density	ink density	DEFER + MEASUREMENT	font/rendering	M:95
+188	glyph.geometry.centroid_x	centroid x	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+189	glyph.geometry.centroid_y	centroid y	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+190	glyph.geometry.left_right_balance	left-right balance	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+191	glyph.geometry.top_bottom_balance	top-bottom balance	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+192	glyph.geometry.orientation_spectrum	orientation spectrum	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+193	glyph.geometry.horizontal_energy	horizontal energy	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+194	glyph.geometry.vertical_energy	vertical energy	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+195	glyph.geometry.diagonal_energy	diagonal energy	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+196	glyph.geometry.curvature	curvature	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+197	glyph.geometry.symmetry	symmetry	DEFER + MEASUREMENT	font/rendering	M:94,X:1
+198	glyph.topology.connected_component_count	connected-component count	DEFER + DISCRIMINATE	font/rendering	E:95
+199	glyph.topology.contour_count	contour count	DEFER + DISCRIMINATE	font/rendering	E:95
+200	glyph.topology.enclosed_region_count	enclosed-region count	DEFER + DISCRIMINATE	font/rendering	E:95
+201	glyph.topology.counter_count	counter count	DEFER + DISCRIMINATE	font/rendering	E:95
+202	glyph.topology.euler_characteristic	Euler characteristic	DEFER + DISCRIMINATE	font/rendering	E:95
+203	glyph.topology.skeleton_endpoint_count	skeleton endpoint count	DEFER + DISCRIMINATE	font/rendering	E:95
+204	glyph.topology.skeleton_junction_count	skeleton junction count	DEFER + DISCRIMINATE	font/rendering	E:95
+205	glyph.topology.crossing_count	crossing count	DEFER + DISCRIMINATE	font/rendering	E:95
+206	glyph.topology.open_path_count	open-path count	DEFER + DISCRIMINATE	font/rendering	E:95
+207	glyph.topology.closed_path_count	closed-path count	DEFER + DISCRIMINATE	font/rendering	E:95
+208	glyph.topology.loop_occurrence_rate	loop occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+209	glyph.topology.crossbar_occurrence_rate	crossbar occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+210	glyph.topology.vertical_stroke_occurrence_rate	vertical-stroke occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+211	glyph.topology.horizontal_stroke_occurrence_rate	horizontal-stroke occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+212	glyph.topology.diagonal_stroke_occurrence_rate	diagonal-stroke occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+213	glyph.topology.ascender_occurrence_rate	ascender occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+214	glyph.topology.descender_occurrence_rate	descender occurrence rate	DEFER + MODULATE	font ensemble/source	U:94,X:1
+215	glyph.spatial.normalized_ink_density_field	normalized ink-density field	DEFER + MEASUREMENT	font/rendering	M:95
+216	glyph.spatial.pixel_cell_occupancy_field	pixel/cell occupancy field	DEFER + MEASUREMENT	font/rendering	M:95
+217	glyph.spatial.mean_ink_density_field	mean ink-density field	DEFER + MODULATE	font/rendering ensemble	U:95
+218	glyph.spatial.ink_density_variance_field	ink-density variance field	DEFER + MODULATE	font/rendering ensemble	U:95
+219	glyph.spatial.pixel_cell_occupancy_probability	pixel/cell occupancy probability	DEFER + MODULATE	font/rendering ensemble	U:95
+220	glyph.spatial.spatial_stability	spatial stability	DEFER + MODULATE	font/rendering ensemble	U:95
+221	glyph.spatial.spatial_variation	spatial variation	DEFER + MODULATE	font/rendering ensemble	U:95
+222	glyph.spatial.font_realization_count	font realization count	DEFER + MODULATE	font/rendering ensemble	U:95
+223	glyph.spatial.visual_feature_occurrence_rate	visual feature occurrence rate	DEFER + MODULATE	font/rendering ensemble	U:95
+224	glyph.spatial.visual_feature_variance	visual feature variance	DEFER + MODULATE	font/rendering ensemble	U:95
+225	glyph.spatial.font_conditioned_realization	font-conditioned realization	DEFER	font; rendered glyph representation	E:95
+226	confusability.pairwise_visual_distance	pairwise visual distance	RELATION + MEASUREMENT	VISIBLE94 × VISIBLE94	R:94,X:1
+227	confusability.font_conditioned_character_distance	font-conditioned character distance	RELATION + DEFER + MEASUREMENT	VISIBLE94 × VISIBLE94 × font	R:94,X:1
+228	confusability.confusability_probability	confusability probability	RELATION + MODULATE	VISIBLE94 × VISIBLE94	R:94,X:1
+229	confusability.nearest_visual_neighbors	nearest visual neighbors	RELATION	VISIBLE94 -> set(VISIBLE94)	R:94,X:1
+230	confusability.distribution_overlap	distribution overlap	RELATION + MODULATE	VISIBLE94 × VISIBLE94	R:94,X:1
+231	confusability.o_versus_0_similarity	O-versus-0 similarity	RELATION + MEASUREMENT	named pair O0	R:2,X:93
+232	confusability.i_versus_l_similarity	I-versus-l similarity	RELATION + MEASUREMENT	named pair Il	R:2,X:93
+233	confusability.i_versus_1_similarity	I-versus-1 similarity	RELATION + MEASUREMENT	named pair I1	R:2,X:93
+234	confusability.s_versus_5_similarity	S-versus-5 similarity	RELATION + MEASUREMENT	named pair S5	R:2,X:93
+235	confusability.b_versus_8_similarity	B-versus-8 similarity	RELATION + MEASUREMENT	named pair B8	R:2,X:93
+236	confusability.period_versus_comma_similarity	period-versus-comma similarity	RELATION + MEASUREMENT	named pair .,	R:2,X:93
+237	confusability.hyphen_versus_underscore_similarity	hyphen-versus-underscore similarity	RELATION + MEASUREMENT	named pair -_	R:2,X:93
+238	orthographic.absolute_character_position	absolute character position	DEFER	containing occurrence/span	E:95
+239	orthographic.relative_word_position	relative word position	DEFER	containing occurrence/span	E:95
+240	orthographic.relative_sentence_position	relative sentence position	DEFER	containing occurrence/span	E:95
+241	orthographic.word_initial	word-initial	DEFER	containing occurrence/span	E:95
+242	orthographic.word_medial	word-medial	DEFER	containing occurrence/span	E:95
+243	orthographic.word_final	word-final	DEFER	containing occurrence/span	E:95
+244	orthographic.sentence_initial	sentence-initial	DEFER	containing occurrence/span	E:95
+245	orthographic.sentence_medial	sentence-medial	DEFER	containing occurrence/span	E:95
+246	orthographic.sentence_final	sentence-final	DEFER	containing occurrence/span	E:95
+247	orthographic.line_initial	line-initial	DEFER	containing occurrence/span	E:95
+248	orthographic.line_final	line-final	DEFER	containing occurrence/span	E:95
+249	orthographic.preceded_by_space	preceded-by-space	DEFER	containing occurrence/span	E:95
+250	orthographic.followed_by_space	followed-by-space	DEFER	containing occurrence/span	E:95
+251	orthographic.distance_to_left_boundary	distance to left boundary	DEFER	containing occurrence/span	E:95
+252	orthographic.distance_to_right_boundary	distance to right boundary	DEFER	containing occurrence/span	E:95
+253	orthographic.word_length	word length	DEFER	containing occurrence/span	E:95
+254	orthographic.repeated_character_status	repeated-character status	DEFER	containing occurrence/span	E:95
+255	orthographic.character_repetition_count	character repetition count	DEFER	containing occurrence/span	E:95
+256	orthographic.left_character	left character	DEFER + RELATION	focal occurrence × adjacent occurrence	R:95
+257	orthographic.right_character	right character	DEFER + RELATION	focal occurrence × adjacent occurrence	R:95
+258	corpus.unigram_frequency	unigram frequency	MODULATE		U:95
+259	corpus.left_neighbor_distribution	left-neighbor distribution	RELATION + MODULATE	ALL95 × ALL95	R:95
+260	corpus.right_neighbor_distribution	right-neighbor distribution	RELATION + MODULATE	ALL95 × ALL95	R:95
+261	corpus.bigram_frequency	bigram frequency	RELATION + MODULATE	ALL95 × ALL95	R:95
+262	corpus.trigram_frequency	trigram frequency	RELATION + MODULATE	ALL95 × ALL95 × ALL95	R:95
+263	corpus.higher_order_n_gram_frequency	higher-order n-gram frequency	RELATION + MODULATE	ALL95^n	R:95
+264	corpus.next_character_probability	next-character probability	RELATION + MODULATE	current × next	R:95
+265	corpus.previous_character_probability	previous-character probability	RELATION + MODULATE	previous × current	R:95
+266	corpus.conditional_probability	conditional probability	RELATION + MODULATE	conditioning-structure dependent	R:95
+267	corpus.pointwise_mutual_information	pointwise mutual information	RELATION + MODULATE	character × character	R:95
+268	corpus.k_character_history	k-character history	DEFER + RELATION	ordered k-character occurrence/window	R:95
+269	corpus.next_character_entropy	next-character entropy	MODULATE		U:95
+270	corpus.conditional_entropy	conditional entropy	MODULATE		U:95
+271	corpus.mutual_information	mutual information	MODULATE		U:95
+272	corpus.position_distribution	position distribution	MODULATE		U:95
+273	corpus.word_initial_frequency	word-initial frequency	MODULATE		U:95
+274	corpus.word_medial_frequency	word-medial frequency	MODULATE		U:95
+275	corpus.word_final_frequency	word-final frequency	MODULATE		U:95
+276	corpus.sentence_initial_frequency	sentence-initial frequency	MODULATE		U:95
+277	corpus.sentence_final_frequency	sentence-final frequency	MODULATE		U:95
+278	morphology.morpheme_membership	morpheme membership	DEFER	containing morphological span	E:95
+279	morphology.morpheme_boundary	morpheme boundary	DEFER	containing morphological span	E:95
+280	morphology.prefix_participation	prefix participation	DEFER	containing morphological span	E:95
+281	morphology.suffix_participation	suffix participation	DEFER	containing morphological span	E:95
+282	morphology.root_participation	root participation	DEFER	containing morphological span	E:95
+283	morphology.stem_participation	stem participation	DEFER	containing morphological span	E:95
+284	morphology.inflectional_suffix_participation	inflectional suffix participation	DEFER	containing morphological span	E:95
+285	morphology.derivational_suffix_participation	derivational suffix participation	DEFER	containing morphological span	E:95
+286	morphology.plural_marker_participation	plural-marker participation	DEFER	containing morphological span	E:95
+287	morphology.possessive_marker_participation	possessive-marker participation	DEFER	containing morphological span	E:95
+288	morphology.comparative_marker_participation	comparative-marker participation	DEFER	containing morphological span	E:95
+289	morphology.superlative_marker_participation	superlative-marker participation	DEFER	containing morphological span	E:95
+290	morphology.tense_marker_participation	tense-marker participation	DEFER	containing morphological span	E:95
+291	morphology.number_marker_participation	number-marker participation	DEFER	containing morphological span	E:95
+292	morphology.case_marker_participation	case-marker participation	DEFER	containing morphological span	E:95
+293	morphology.word_form_relation	word-form relation	DEFER	containing morphological span	E:95
+294	morphology.lemma_relation	lemma relation	DEFER	containing morphological span	E:95
+295	morphology.inflection_relation	inflection relation	DEFER	containing morphological span	E:95
+296	grammar.part_of_speech	part of speech	DEFER	containing grammatical/syntactic annotation	E:95
+297	grammar.syntactic_dependency_relation	syntactic dependency relation	DEFER	containing grammatical/syntactic annotation	E:95
+298	grammar.syntactic_head_relation	syntactic head relation	DEFER	containing grammatical/syntactic annotation	E:95
+299	grammar.subject_participation	subject participation	DEFER	containing grammatical/syntactic annotation	E:95
+300	grammar.object_participation	object participation	DEFER	containing grammatical/syntactic annotation	E:95
+301	grammar.predicate_participation	predicate participation	DEFER	containing grammatical/syntactic annotation	E:95
+302	grammar.modifier_participation	modifier participation	DEFER	containing grammatical/syntactic annotation	E:95
+303	grammar.determiner_participation	determiner participation	DEFER	containing grammatical/syntactic annotation	E:95
+304	grammar.auxiliary_participation	auxiliary participation	DEFER	containing grammatical/syntactic annotation	E:95
+305	grammar.clause_boundary_participation	clause-boundary participation	DEFER	containing grammatical/syntactic annotation	E:95
+306	grammar.phrase_boundary_participation	phrase-boundary participation	DEFER	containing grammatical/syntactic annotation	E:95
+307	grammar.sentence_boundary_participation	sentence-boundary participation	DEFER	containing grammatical/syntactic annotation	E:95
+308	grammar.grammatical_role_distribution	grammatical role distribution	DEFER + MODULATE	containing grammatical/syntactic annotation	U:95
+309	grammar.context_conditioned_grammatical_role	context-conditioned grammatical role	DEFER + MODULATE	containing grammatical/syntactic annotation	U:95
+310	semantic.lexeme_membership	lexeme membership	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+311	semantic.sense_membership	sense membership	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+312	semantic.definition_relation	definition relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+313	semantic.synonym_relation	synonym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+314	semantic.antonym_relation	antonym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+315	semantic.hypernym_relation	hypernym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+316	semantic.hyponym_relation	hyponym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+317	semantic.meronym_relation	meronym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+318	semantic.holonym_relation	holonym relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+319	semantic.derivational_relation	derivational relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+320	semantic.similar_to_relation	similar-to relation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+321	semantic.semantic_frame_participation	semantic-frame participation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+322	semantic.verbnet_class_participation	VerbNet class participation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+323	semantic.framenet_frame_participation	FrameNet frame participation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+324	semantic.wordnet_synset_participation	WordNet synset participation	DEFER	containing lexeme/sense/span; relation lives above character layer	E:95
+325	punctuation.sentence_terminator	sentence terminator	GATE + DISCRIMINATE	conventional role candidate	E:3,X:92
+326	punctuation.clause_separator	clause separator	GATE + DISCRIMINATE	corpus/context-derived	E:3,X:92
+327	punctuation.phrase_separator	phrase separator	GATE + DISCRIMINATE	corpus/context-derived	E:4,X:91
+328	punctuation.quotation_delimiter	quotation delimiter	GATE + DISCRIMINATE	conventional role candidate	E:2,X:93
+329	punctuation.parenthetical_delimiter	parenthetical delimiter	GATE + DISCRIMINATE	conventional role candidate	E:6,X:89
+330	punctuation.scope_opener	scope opener	GATE + DISCRIMINATE	conventional role candidate	E:3,X:92
+331	punctuation.scope_closer	scope closer	GATE + DISCRIMINATE	conventional role candidate	E:3,X:92
+332	punctuation.list_separator	list separator	GATE + DISCRIMINATE	conventional role candidate	E:2,X:93
+333	punctuation.decimal_marker	decimal marker	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+334	punctuation.thousands_separator	thousands separator	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+335	punctuation.apostrophe	apostrophe	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+336	punctuation.hyphen	hyphen	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+337	punctuation.dash	dash	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+338	punctuation.underscore	underscore	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+339	punctuation.colon	colon	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+340	punctuation.semicolon	semicolon	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+341	punctuation.question_marker	question marker	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+342	punctuation.exclamation_marker	exclamation marker	GATE + DISCRIMINATE	conventional role candidate	E:1,X:94
+343	punctuation.quotation_marker	quotation marker	GATE + DISCRIMINATE	conventional role candidate	E:2,X:93
+344	programming.identifier_participation	identifier participation	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+345	programming.operator_participation	operator participation	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+346	programming.assignment_operator	assignment operator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+347	programming.comparison_operator	comparison operator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+348	programming.arithmetic_operator	arithmetic operator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+349	programming.logical_operator	logical operator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+350	programming.bitwise_operator	bitwise operator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+351	programming.delimiter	delimiter	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+352	programming.scope_opener	scope opener	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+353	programming.scope_closer	scope closer	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+354	programming.indexing_delimiter	indexing delimiter	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+355	programming.argument_separator	argument separator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+356	programming.statement_terminator	statement terminator	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+357	programming.comment_marker	comment marker	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+358	programming.string_delimiter	string delimiter	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+359	programming.escape_marker	escape marker	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+360	programming.member_access_marker	member-access marker	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+361	programming.decorator_marker	decorator marker	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+362	programming.type_syntax_participation	type-syntax participation	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+363	programming.language_conditioned_token_role	language-conditioned token role	DEFER + GATE + DISCRIMINATE	selected programming language/grammar	E:95
+364	math_syntax.operator	operator	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+365	math_syntax.relation	relation	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+366	math_syntax.equality_relation	equality relation	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+367	math_syntax.inequality_relation	inequality relation	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+368	math_syntax.sign	sign	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+369	math_syntax.variable	variable	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+370	math_syntax.unknown	unknown	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+371	math_syntax.constant	constant	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+372	math_syntax.operand	operand	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+373	math_syntax.coefficient	coefficient	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+374	math_syntax.exponent	exponent	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+375	math_syntax.radical_marker	radical marker	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+376	math_syntax.fraction_separator	fraction separator	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+377	math_syntax.decimal_marker	decimal marker	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+378	math_syntax.grouping_opener	grouping opener	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+379	math_syntax.grouping_closer	grouping closer	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+380	math_syntax.set_delimiter	set delimiter	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+381	math_syntax.function_argument_delimiter	function-argument delimiter	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+382	math_syntax.coordinate_separator	coordinate separator	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+383	math_syntax.ratio_marker	ratio marker	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+384	math_syntax.percentage_marker	percentage marker	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+385	math_syntax.context_conditioned_role	mathematical role conditioned on context	DEFER + GATE + DISCRIMINATE	mathematical notation/context/grammar	E:95
+386	context.active_pronunciation	active pronunciation	DEFER	current occurrence/context	E:52,X:43
+387	context.active_phoneme	active phoneme	DEFER	current occurrence/context	E:52,X:43
+388	context.active_articulatory_properties	active articulatory properties	DEFER	current occurrence/context	E:52,X:43
+389	context.active_acoustic_realization	active acoustic realization	DEFER	current occurrence/context	E:52,X:43
+390	context.active_morphological_role	active morphological role	DEFER	current occurrence/context	E:95
+391	context.active_grammatical_role	active grammatical role	DEFER	current occurrence/context	E:95
+392	context.active_semantic_role	active semantic role	DEFER	current occurrence/context	E:95
+393	context.active_punctuation_role	active punctuation role	DEFER	current occurrence/context	E:95
+394	context.active_programming_role	active programming role	DEFER	current occurrence/context	E:95
+395	context.active_mathematical_role	active mathematical role	DEFER	current occurrence/context	E:95
+396	context.active_delimiter_role	active delimiter role	DEFER	current occurrence/context	E:95
+397	context.active_operator_role	active operator role	DEFER	current occurrence/context	E:95
+398	context.active_variable_role	active variable role	DEFER	current occurrence/context	E:95
+399	context.active_numeric_role	active numeric role	DEFER	current occurrence/context	E:95
+400	context.active_boundary_role	active boundary role	DEFER	current occurrence/context	E:95
+401	context.active_scope_role	active scope role	DEFER	current occurrence/context	E:95
+402	context.context_conditioned_capability_activation	context-conditioned capability activation	DEFER	current occurrence/context	E:95
+403	capability.probability_phonetic_feature	probability of phonetic feature	MODULATE	distribution/statistic; not primitive coordinate	U:52,X:43
+404	capability.probability_articulatory_feature	probability of articulatory feature	MODULATE	distribution/statistic; not primitive coordinate	U:52,X:43
+405	capability.probability_visual_feature	probability of visual feature	MODULATE	distribution/statistic; not primitive coordinate	U:95
+406	capability.probability_morphological_role	probability of morphological role	MODULATE	distribution/statistic; not primitive coordinate	U:95
+407	capability.probability_syntactic_role	probability of syntactic role	MODULATE	distribution/statistic; not primitive coordinate	U:95
+408	capability.probability_punctuation_role	probability of punctuation role	MODULATE	distribution/statistic; not primitive coordinate	U:95
+409	capability.probability_programming_role	probability of programming role	MODULATE	distribution/statistic; not primitive coordinate	U:95
+410	capability.probability_mathematical_role	probability of mathematical role	MODULATE	distribution/statistic; not primitive coordinate	U:95
+411	capability.probability_word_position	probability of word position	MODULATE	distribution/statistic; not primitive coordinate	U:95
+412	capability.probability_contextual_realization	probability of contextual realization	MODULATE	distribution/statistic; not primitive coordinate	U:95
+413	evidence.source_dataset	source dataset	MODULATE	provenance/evidence metadata	U:95
+414	evidence.source_standard	source standard	MODULATE	provenance/evidence metadata	U:95
+415	evidence.source_version	source version	MODULATE	provenance/evidence metadata	U:95
+416	evidence.source_record	source record	MODULATE	provenance/evidence metadata	U:95
+417	evidence.evidence_class	evidence class	MODULATE	provenance/evidence metadata	U:95
+418	evidence.observation_count	observation count	MODULATE	provenance/evidence metadata	U:95
+419	evidence.support_count	support count	MODULATE	provenance/evidence metadata	U:95
+420	evidence.contradiction_count	contradiction count	MODULATE	provenance/evidence metadata	U:95
+421	evidence.sample_size	sample size	MODULATE	provenance/evidence metadata	U:95
+422	evidence.coverage	coverage	MODULATE	provenance/evidence metadata	U:95
+423	evidence.occurrence_rate	occurrence rate	MODULATE	provenance/evidence metadata	U:95
+424	evidence.mean	mean	MODULATE	provenance/evidence metadata	U:95
+425	evidence.variance	variance	MODULATE	provenance/evidence metadata	U:95
+426	evidence.minimum	minimum	MODULATE	provenance/evidence metadata	U:95
+427	evidence.maximum	maximum	MODULATE	provenance/evidence metadata	U:95
+428	evidence.confidence	confidence	MODULATE	provenance/evidence metadata	U:95
+429	evidence.missing_data_status	missing-data status	MODULATE	provenance/evidence metadata	U:95
+430	evidence.derivation_method	derivation method	MODULATE	provenance/evidence metadata	U:95
+431	evidence.compilation_method	compilation method	MODULATE	provenance/evidence metadata	U:95
+432	source_class.authoritative_standard	authoritative standard	MODULATE	evidence-source classification	U:95
+433	source_class.established_database	established database	MODULATE	evidence-source classification	U:95
+434	source_class.corpus_derived_statistic	corpus-derived statistic	MODULATE	evidence-source classification	U:95
+435	source_class.published_physical_measurement	published physical measurement	MODULATE	evidence-source classification	U:95
+436	source_class.deterministic_extraction_from_published_raw_data	deterministic extraction from published raw data	MODULATE	evidence-source classification	U:95
