@@ -480,6 +480,49 @@ def write_jsonl_line(handle, obj: dict[str, Any]) -> None:
     )
 
 
+def global_snapshot_rows(con: sqlite3.Connection) -> Iterator[dict[str, Any]]:
+    """Stream non-lexeme-global evidence without duplicating it per occurrence."""
+    present = tables(con)
+    selected = (
+        "source",
+        "structural_rule",
+        "controlled_term",
+        "violation_pattern",
+        "construction_frequency",
+        "document_instance",
+        "document_section",
+    )
+    for table in selected:
+        if table not in present:
+            continue
+        for row in con.execute(f'SELECT * FROM "{table}" ORDER BY 1'):
+            yield {"table": table, "row": dict(row)}
+
+    if "unicode_character" in present:
+        for row in con.execute(
+            """SELECT * FROM unicode_character
+               WHERE codepoint BETWEEN ? AND ?
+               ORDER BY codepoint""",
+            (ASCII_MIN, ASCII_MAX),
+        ):
+            yield {"table": "unicode_character", "row": dict(row)}
+
+    # Preserve correction/violation evidence separately from positive examples.
+    if "error_occurrence" in present:
+        for row in con.execute('SELECT * FROM "error_occurrence" ORDER BY error_id'):
+            yield {"table": "error_occurrence", "row": dict(row)}
+
+
+def database_table_counts(con: sqlite3.Connection) -> dict[str, int]:
+    result: dict[str, int] = {}
+    for table in sorted(tables(con)):
+        try:
+            result[table] = int(con.execute(f'SELECT COUNT(*) FROM "{table}"').fetchone()[0])
+        except sqlite3.DatabaseError:
+            result[table] = -1
+    return result
+
+
 def assemble(
     db_path: Path | None,
     corpus_paths: list[Path],
@@ -490,6 +533,7 @@ def assemble(
     out.mkdir(parents=True, exist_ok=True)
     records_path = out / "records.jsonl"
     lexical_path = out / "lexical_snapshot.jsonl"
+    global_path = out / "global_snapshot.jsonl"
     rejects_path = out / "rejections.jsonl"
 
     stats = Counter()
@@ -497,6 +541,7 @@ def assemble(
     source_counts = Counter()
     observed_lexemes: set[str] = set()
     db_sha = None
+    db_table_counts: dict[str, int] = {}
     con: sqlite3.Connection | None = None
 
     with records_path.open("w", encoding="utf-8") as records_file, rejects_path.open(
@@ -508,6 +553,7 @@ def assemble(
                 raise FileNotFoundError(db_path)
             db_sha = sha256_file(db_path)
             con = connect_ro(db_path)
+            db_table_counts = database_table_counts(con)
             for record, lexemes, alignment_failures in iter_db_records(con, origins):
                 if not ascii95(record["text"]):
                     write_jsonl_line(
@@ -558,6 +604,7 @@ def assemble(
                 stats["rejected_files"] += 1
 
     lexical_written = 0
+    global_written = 0
     with lexical_path.open("w", encoding="utf-8") as lexical_file:
         if con is not None:
             for normalized in sorted(observed_lexemes):
@@ -566,6 +613,13 @@ def assemble(
                     lexical_snapshot(con, normalized),
                 )
                 lexical_written += 1
+
+    with global_path.open("w", encoding="utf-8") as global_file:
+        if con is not None:
+            for item in global_snapshot_rows(con):
+                write_jsonl_line(global_file, item)
+                global_written += 1
+
     if con is not None:
         con.close()
 
@@ -591,6 +645,8 @@ def assemble(
         "source_counts": dict(source_counts),
         "observed_lexemes": len(observed_lexemes),
         "lexical_snapshots": lexical_written,
+        "global_snapshot_rows": global_written,
+        "database_table_counts": db_table_counts,
         "outputs": {
             "records": {
                 "path": records_path.name,
@@ -599,6 +655,10 @@ def assemble(
             "lexical_snapshot": {
                 "path": lexical_path.name,
                 "sha256": sha256_file(lexical_path),
+            },
+            "global_snapshot": {
+                "path": global_path.name,
+                "sha256": sha256_file(global_path),
             },
             "rejections": {
                 "path": rejects_path.name,
