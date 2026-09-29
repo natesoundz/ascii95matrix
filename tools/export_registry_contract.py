@@ -206,6 +206,22 @@ def export_contract(workbook: Path, output: Path) -> dict:
         json.dumps(contract, indent=2, ensure_ascii=False, sort_keys=False) + "\n",
         encoding="utf-8",
     )
+
+    summary_path = output.with_name("registry_dimensions.tsv")
+    lines = ["index\tid\tname\tinteraction\tdefer_scope\tstatus_counts"]
+    for d in dimensions:
+        counts = ",".join(f"{k}:{v}" for k, v in sorted(d["status_counts"].items()))
+        clean = [
+            str(d["index"]),
+            d["id"].replace("\t", " "),
+            d["name"].replace("\t", " "),
+            d["interaction"].replace("\t", " "),
+            d["defer_scope"].replace("\t", " "),
+            counts,
+        ]
+        lines.append("\t".join(clean))
+    summary_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    contract["summary_tsv"] = str(summary_path)
     return contract
 
 
