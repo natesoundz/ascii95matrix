@@ -5,6 +5,7 @@ on:
     branches: [eight-part-architecture]
     paths:
       - "eight_part/**"
+      - "compile_downstream_437.py"
       - "relational_compiler.py"
       - ".github/workflows/run-eight-part-expert-path.yml"
   workflow_dispatch:
@@ -19,24 +20,48 @@ jobs:
           python-version: "3.12"
       - name: Install dependencies
         run: python -m pip install numpy
-      - name: Run canonical 95x437 compiler integrity test
-        run: python relational_compiler.py self-test | tee canonical_437_compiler.txt
-      - name: Prove legacy width is rejected by branch runtime
+      - name: Build registry
+        run: python tools/build_registry_npz.py --contract data/registry_contract.json --out registry_437.npz
+      - name: Build complete synthetic occurrence field for architecture verification
         run: |
-          python - <<'PY' | tee eight_part_boundary.txt
-          from pathlib import Path
-          source = Path("eight_part/expert_path.py").read_text()
-          assert "D = 437" in source
-          assert "requires E[95,437]" in source
-          assert "generation is blocked" in source
-          print("CANONICAL_WIDTH=437")
-          print("LEGACY_254_SUBSTITUTION=REJECTED")
-          print("DOWNSTREAM_QKV_FFN=BLOCKED_UNTIL_COMPILED_IN_437D")
+          python - <<'PY'
+          import numpy as np
+          D=437; V=95
+          y=[]; g=[]; sid=[]
+          for c in range(V):
+              for r in range(2):
+                  y.append(c+32)
+                  k=np.arange(D,dtype=np.float64)
+                  row=(c+1)*(1.0+(k+1)/D)+(r+1)*0.001*((k%17)+1)
+                  g.append(row); sid.append(f"verify:{c}:{r}")
+          np.savez_compressed("evidence_437.npz",y=np.asarray(y,np.int16),g=np.asarray(g),w=np.ones(len(y)),source_id=np.asarray(sid))
           PY
-      - name: Publish canonical report
+      - name: Compile canonical frozen geometry
+        run: python relational_compiler.py compile --registry registry_437.npz --evidence evidence_437.npz --out frozen_437 --phi abs --center-weight uniform
+      - name: Validate canonical geometry
+        run: python relational_compiler.py validate-frozen frozen_437 | tee canonical_437_compiler.txt
+      - name: Compile 437-D downstream operators
+        run: python compile_downstream_437.py --frozen frozen_437 --out downstream_437.npz --report downstream_437_report.json
+      - name: Run conditional expert path
+        run: python eight_part/expert_path.py --frozen frozen_437 --operators downstream_437.npz --prompt "def add(x, y): return " --tokens 80 --experts 4 | tee eight_part_run.txt
+      - name: Assert no legacy width
+        run: |
+          python - <<'PY'
+          import numpy as np
+          z=np.load("downstream_437.npz")
+          assert z["Q"].shape==(95,437)
+          assert z["K"].shape==(95,437)
+          assert z["V"].shape==(95,437)
+          assert z["expert_gate"].shape==(95,437)
+          assert 254 not in sum((list(z[k].shape) for k in z.files),[])
+          print("ALL_DOWNSTREAM_OPERATORS=437D")
+          print("LEGACY_254_SUBSTITUTION=NONE")
+          PY
+      - name: Publish run
         uses: actions/upload-artifact@v4
         with:
           name: eight-part-canonical-437-run
           path: |
             canonical_437_compiler.txt
-            eight_part_boundary.txt
+            downstream_437_report.json
+            eight_part_run.txt
