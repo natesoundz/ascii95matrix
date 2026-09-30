@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import keyword
 import math
 import re
 from collections import Counter, defaultdict
@@ -355,6 +356,187 @@ def apply_evidence_statistics(
     )
 
 
+
+def normalize_lexeme(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().replace("_", " ")).casefold()
+
+
+def load_lexical_snapshots(path: Path | None) -> dict[str, dict]:
+    if path is None:
+        return {}
+    if not path.exists():
+        raise FileNotFoundError(path)
+    result: dict[str, dict] = {}
+    for item in iter_jsonl(path):
+        normalized = str(item.get("normalized", "")).strip()
+        if normalized:
+            result[normalized] = item
+    return result
+
+
+def containing_db_token(record: dict, position: int) -> dict | None:
+    annotations = record.get("annotations")
+    if not isinstance(annotations, dict):
+        return None
+    tokens = annotations.get("tokens")
+    if not isinstance(tokens, list):
+        return None
+    for token in tokens:
+        if not isinstance(token, dict):
+            continue
+        a = token.get("char_start")
+        b = token.get("char_end")
+        if type(a) is int and type(b) is int and a <= position < b:
+            return token
+    return None
+
+
+def containing_python_token(record: dict, position: int) -> dict | None:
+    if record.get("objective") != "CODE_CAUSAL":
+        return None
+    annotations = record.get("annotations")
+    if not isinstance(annotations, dict):
+        return None
+    tokens = annotations.get("python_tokens")
+    if not isinstance(tokens, list):
+        return None
+    for token in tokens:
+        if not isinstance(token, dict):
+            continue
+        a = token.get("start_col")
+        b = token.get("end_col")
+        if type(a) is int and type(b) is int and a <= position < b:
+            return token
+    return None
+
+
+def apply_grammar_from_ud(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    record: dict,
+    position: int,
+) -> None:
+    """Project binary grammatical participation from the real aligned UD token.
+
+    Categorical POS/dependency/head identities remain unresolved because the
+    scalar contract has no declared lossless categorical encoding.
+    """
+    token = containing_db_token(record, position)
+    if token is None:
+        return
+    dep = str(token.get("dep", "") or "").casefold()
+    if not dep:
+        return
+    base = dep.split(":", 1)[0]
+    roles = {
+        "grammar.subject_participation": base in {"nsubj", "csubj"},
+        "grammar.object_participation": base in {"obj", "iobj"},
+        "grammar.predicate_participation": base == "root",
+        "grammar.modifier_participation": base in {
+            "amod", "advmod", "nmod", "acl", "advcl", "appos", "nummod"
+        },
+        "grammar.determiner_participation": base == "det",
+        "grammar.auxiliary_participation": base in {"aux", "cop"},
+    }
+    for key, active in roles.items():
+        set_if_present(g, by_id, key, float(active))
+
+
+def apply_semantic_from_lexical_snapshot(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    record: dict,
+    position: int,
+    lexical: dict[str, dict],
+) -> None:
+    """Project only source-backed binary lexical/relation participation."""
+    token = containing_db_token(record, position)
+    if token is None:
+        return
+    normalized = normalize_lexeme(str(token.get("lemma", "") or token.get("text", "")))
+    snap = lexical.get(normalized)
+    if not snap or not isinstance(snap.get("lexeme"), dict):
+        return
+    facts = snap.get("facts")
+    if not isinstance(facts, dict):
+        facts = {}
+
+    set_if_present(g, by_id, "semantic.lexeme_membership", 1.0)
+    senses = facts.get("senses")
+    if isinstance(senses, list):
+        set_if_present(g, by_id, "semantic.sense_membership", float(bool(senses)))
+
+    relations = facts.get("relations")
+    if not isinstance(relations, list):
+        return
+    relation_types = {
+        str(row.get("relation_type", "")).upper()
+        for row in relations
+        if isinstance(row, dict) and row.get("relation_type")
+    }
+    relation_laws = {
+        "semantic.antonym_relation": {"ANTONYM"},
+        "semantic.hypernym_relation": {"HYPERNYM"},
+        "semantic.hyponym_relation": {"HYPONYM"},
+        "semantic.meronym_relation": {
+            "MEMBER_MERONYM", "PART_MERONYM", "SUBSTANCE_MERONYM"
+        },
+        "semantic.holonym_relation": {
+            "MEMBER_HOLONYM", "PART_HOLONYM", "SUBSTANCE_HOLONYM"
+        },
+        "semantic.derivational_relation": {"DERIVATIONALLY_RELATED"},
+        "semantic.similar_to_relation": {"SIMILAR_TO"},
+    }
+    for key, accepted in relation_laws.items():
+        set_if_present(g, by_id, key, float(bool(relation_types & accepted)))
+
+
+def apply_programming_from_python(
+    g: np.ndarray,
+    by_id: dict[str, int],
+    record: dict,
+    text: str,
+    position: int,
+) -> None:
+    """Project Python roles only where the real tokenizer identifies a token."""
+    token = containing_python_token(record, position)
+    if token is None:
+        return
+    token_type = str(token.get("type", ""))
+    token_text = str(token.get("text", ""))
+    ch = text[position]
+    is_name = token_type == "NAME" and not keyword.iskeyword(token_text)
+    is_op = token_type == "OP"
+
+    assignment = {"=", ":=", "+=", "-=", "*=", "/=", "//=", "%=", "**=", "&=", "|=", "^=", ">>=", "<<="}
+    comparison = {"==", "!=", "<", "<=", ">", ">=", "is", "in"}
+    arithmetic = {"+", "-", "*", "/", "//", "%", "**", "@"}
+    logical = {"and", "or", "not"}
+    bitwise = {"&", "|", "^", "~", "<<", ">>"}
+    delimiters = {"(", ")", "[", "]", "{", "}", ",", ":", ";"}
+
+    roles = {
+        "programming.identifier_participation": is_name,
+        "programming.operator_participation": is_op or token_text in logical,
+        "programming.assignment_operator": token_text in assignment,
+        "programming.comparison_operator": token_text in comparison,
+        "programming.arithmetic_operator": token_text in arithmetic,
+        "programming.logical_operator": token_text in logical,
+        "programming.bitwise_operator": token_text in bitwise,
+        "programming.delimiter": token_text in delimiters,
+        "programming.scope_opener": token_text in {"(", "[", "{"},
+        "programming.scope_closer": token_text in {")", "]", "}"},
+        "programming.statement_terminator": token_text == ";",
+        "programming.comment_marker": token_type == "COMMENT" and ch == "#",
+        "programming.string_delimiter": token_type == "STRING" and ch in {"'", '"'},
+        "programming.escape_marker": token_type == "STRING" and ch == "\\",
+        "programming.member_access_marker": token_text == ".",
+        "programming.decorator_marker": token_text == "@",
+    }
+    for key, active in roles.items():
+        set_if_present(g, by_id, key, float(active))
+
+
 def source_id_for(record: dict, position: int) -> str:
     return f"{record.get('dataset','')}:{record.get('id','')}:{position}"
 
@@ -384,10 +566,12 @@ def build(
     out_dir: Path,
     shard_size: int,
     allow_incomplete: bool,
+    lexical_snapshot: Path | None = None,
 ) -> dict:
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     dimensions, by_id = index_dimensions(registry)
     stats, record_count, truth_count = corpus_pass(records)
+    lexical = load_lexical_snapshots(lexical_snapshot)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for old in out_dir.glob("evidence_*.npz"):
@@ -436,6 +620,9 @@ def build(
             apply_corpus_stats(row, by_id, stats, text, p)
             apply_observed_neighbor_strengths(row, by_id, stats, text, p)
             apply_evidence_statistics(row, by_id, stats, c)
+            apply_grammar_from_ud(row, by_id, record, p)
+            apply_semantic_from_lexical_snapshot(row, by_id, record, p, lexical)
+            apply_programming_from_python(row, by_id, record, text, p)
 
             # Enforce canonical X/K boundaries after every resolver.
             for d in dimensions:
@@ -504,6 +691,12 @@ def build(
         "records_sha256": sha256_file(records),
         "registry_file": str(registry_path.resolve()),
         "registry_sha256": sha256_file(registry_path),
+        "lexical_snapshot_file": (
+            None if lexical_snapshot is None else str(lexical_snapshot.resolve())
+        ),
+        "lexical_snapshot_sha256": (
+            None if lexical_snapshot is None else sha256_file(lexical_snapshot)
+        ),
         "record_count": record_count,
         "ground_truth_occurrences": truth_count,
         "projected_occurrences": occurrences,
@@ -522,13 +715,17 @@ def build(
             "next_entropy": "Shannon entropy of next-character distribution",
             "conditional_entropy": "reverse previous-character conditional entropy for current character",
             "evidence_counts": "counts/coverage over exact frozen snapshot",
+            "ud_grammar_participation": "binary grammatical participation from aligned real UD dependency annotations",
+            "lexical_semantic_participation": "binary lexeme/sense/relation participation from exact lexical snapshot rows",
+            "python_programming_roles": "binary programming-role participation from Python tokenize annotations on real source lines",
         },
         "unresolved_policy": "NaN, never zero",
         "note": (
-            "This projector intentionally leaves typed categorical/relation, "
-            "pronunciation-feature, acoustic, glyph/rendering, semantic, grammar, "
-            "programming and mathematical dimensions unresolved until their "
-            "explicit projection laws are added."
+            "This projector resolves only scalar laws warranted by the attached "
+            "real occurrence annotations and lexical snapshot. Categorical identities "
+            "without a declared scalar encoding, pronunciation/phonetic features "
+            "without grapheme-phone alignment, acoustic realization, glyph/rendering, "
+            "and mathematical roles remain unresolved as NaN."
         ),
     }
 
@@ -553,11 +750,22 @@ def main() -> int:
         default=Path("data/registry_contract.json"),
     )
     p.add_argument("--out", type=Path, required=True)
+    p.add_argument(
+        "--lexical-snapshot",
+        type=Path,
+        default=None,
+        help="assembler lexical_snapshot.jsonl; defaults to sibling of --records when present",
+    )
     p.add_argument("--shard-size", type=int, default=100000)
     p.add_argument("--allow-incomplete", action="store_true")
     args = p.parse_args()
     if args.shard_size <= 0:
         raise SystemExit("--shard-size must be > 0")
+    lexical_snapshot = args.lexical_snapshot
+    if lexical_snapshot is None:
+        candidate = args.records.parent / "lexical_snapshot.jsonl"
+        if candidate.exists():
+            lexical_snapshot = candidate
     try:
         report = build(
             args.records,
@@ -565,6 +773,7 @@ def main() -> int:
             args.out,
             args.shard_size,
             args.allow_incomplete,
+            lexical_snapshot,
         )
     except (ValueError, OSError, RuntimeError, json.JSONDecodeError) as exc:
         print(f"ERROR: {exc}")
