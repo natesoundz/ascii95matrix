@@ -62,7 +62,7 @@ jobs:
             --weights .eight_part_compiled/weights.npz \
             --prompt "def add(x, y): return " \
             --tokens 80 \
-            --experts 4 | tee .eight_part_run.txt
+            --experts 4 | tee eight_part_run.txt
 
       - name: Publish run report
         uses: actions/upload-artifact@v4
@@ -70,4 +70,4 @@ jobs:
           name: eight-part-expert-path-run
           path: |
             .eight_part_compiled/compile_report.json
-            .eight_part_run.txt
+            eight_part_run.txt
