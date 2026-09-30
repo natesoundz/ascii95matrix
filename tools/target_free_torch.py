@@ -698,47 +698,10 @@ def load_runtime(path: str | Path, device: str = "cpu") -> CompiledASCII95Torch:
 
 
 def self_test() -> dict:
-    rng = np.random.default_rng(0)
-    D = 16
-    # Unique deterministic synthetic geometry only for implementation integrity.
-    E = rng.normal(size=(V, D)).astype(np.float64)
-    counts = np.zeros((len(OFFSETS), V, V), dtype=np.float64)
-    # A compact deterministic transition system with two causal offsets.
-    for c in range(V):
-        y1 = (c + 1) % V
-        y2 = (c + 7) % V
-        counts[OFFSET_TO_INDEX[-1], c, y1] += 8
-        counts[OFFSET_TO_INDEX[-1], c, y2] += 1
-        counts[OFFSET_TO_INDEX[-2], c, (c + 2) % V] += 4
-        counts[OFFSET_TO_INDEX[-2], c, (c + 9) % V] += 1
-    _, _, mutual = relation_specificity(counts)
-    # Target-free construction must not need y.
-    rels = [(OFFSET_TO_INDEX[-2], 10), (OFFSET_TO_INDEX[-1], 11)]
-    q, survivors, alpha, contradiction = field_from_relations(mutual, rels, np.ones(V, dtype=bool))
-    if contradiction:
-        # These arbitrary relations need not intersect; use one relation for the integrity path.
-        rels = [(OFFSET_TO_INDEX[-1], 11)]
-        q, survivors, alpha, contradiction = field_from_relations(mutual, rels, np.ones(V, dtype=bool))
-    if contradiction or not np.isclose(q.sum(), 1.0):
-        raise AssertionError("constraint field failed")
-    attention = np.zeros((len(OFFSETS), V, D), dtype=np.float64)
-    corr = np.zeros((V, D), dtype=np.float64)
-    model = CompiledASCII95Torch(
-        torch.from_numpy(E), torch.from_numpy(mutual), torch.from_numpy(attention), torch.from_numpy(corr)
-    ).eval()
-    result = model.forward_relations(rels)
-    if result["contradiction"] or result["hF"].shape != (D,):
-        raise AssertionError("PyTorch execution graph failed")
-    if any(p.requires_grad for p in model.parameters()):
-        raise AssertionError("runtime contains trainable parameters")
-    return {
-        "passed": True,
-        "embedding_shape": list(model.E.shape),
-        "trainable_parameter_count": sum(p.numel() for p in model.parameters() if p.requires_grad),
-        "target_argument_in_runtime": False,
-        "survivor_count": int(result["survivor_mask"].sum().item()),
-    }
-
+    raise RuntimeError(
+        "PROHIBITED: synthetic geometry/evidence tests are disabled. "
+        "Validation must consume real, traceable project evidence only."
+    )
 
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__)
