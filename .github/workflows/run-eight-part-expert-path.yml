@@ -53,7 +53,8 @@ jobs:
           assert z["K"].shape==(95,437)
           assert z["V"].shape==(95,437)
           assert z["expert_gate"].shape==(95,437)
-          assert 254 not in sum((list(z[k].shape) for k in z.files),[])
+          shapes=[d for k in z.files for d in z[k].shape]
+          assert 254 not in shapes
           print("ALL_DOWNSTREAM_OPERATORS=437D")
           print("LEGACY_254_SUBSTITUTION=NONE")
           PY
