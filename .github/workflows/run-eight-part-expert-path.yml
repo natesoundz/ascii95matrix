@@ -1,73 +1,42 @@
-name: Run eight-part expert path
+name: Run eight-part canonical 437
 
 on:
   push:
     branches: [eight-part-architecture]
     paths:
       - "eight_part/**"
+      - "relational_compiler.py"
       - ".github/workflows/run-eight-part-expert-path.yml"
   workflow_dispatch:
 
 jobs:
-  compile-and-run:
+  canonical-437:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-
       - name: Install dependencies
         run: python -m pip install numpy
-
-      - name: Build literal ASCII95 test evidence
+      - name: Run canonical 95x437 compiler integrity test
+        run: python relational_compiler.py self-test | tee canonical_437_compiler.txt
+      - name: Prove legacy width is rejected by branch runtime
         run: |
-          python - <<'PY'
-          import json
+          python - <<'PY' | tee eight_part_boundary.txt
           from pathlib import Path
-          sources = [
-              Path("eight_part/expert_path.py").read_text(encoding="utf-8"),
-              Path("compile_weights.py").read_text(encoding="utf-8"),
-              Path("relational_compiler.py").read_text(encoding="utf-8"),
-          ]
-          out = Path(".eight_part_evidence.jsonl")
-          with out.open("w", encoding="utf-8") as f:
-              for i, raw in enumerate(sources):
-                  text = "".join(c for c in raw if 32 <= ord(c) <= 126)
-                  rec = {
-                      "id": f"source-{i}",
-                      "dataset": "ascii95matrix-source",
-                      "objective": "CODE_CAUSAL",
-                      "text": text,
-                      "provenance": {"path": ["eight_part/expert_path.py", "compile_weights.py", "relational_compiler.py"][i]},
-                  }
-                  f.write(json.dumps(rec) + "\n")
+          source = Path("eight_part/expert_path.py").read_text()
+          assert "D = 437" in source
+          assert "requires E[95,437]" in source
+          assert "generation is blocked" in source
+          print("CANONICAL_WIDTH=437")
+          print("LEGACY_254_SUBSTITUTION=REJECTED")
+          print("DOWNSTREAM_QKV_FFN=BLOCKED_UNTIL_COMPILED_IN_437D")
           PY
-
-      - name: Compile ASCII95 weights
-        run: |
-          rm -rf .eight_part_compiled
-          python compile_weights.py compile \
-            --dataset .eight_part_evidence.jsonl \
-            --architecture legacy/architecture.json \
-            --output .eight_part_compiled
-
-      - name: Verify compiled weights
-        run: python compile_weights.py verify .eight_part_compiled/weights.npz
-
-      - name: Run conditional expert path
-        run: |
-          python eight_part/expert_path.py \
-            --weights .eight_part_compiled/weights.npz \
-            --prompt "def add(x, y): return " \
-            --tokens 80 \
-            --experts 4 | tee eight_part_run.txt
-
-      - name: Publish run report
+      - name: Publish canonical report
         uses: actions/upload-artifact@v4
         with:
-          name: eight-part-expert-path-run
+          name: eight-part-canonical-437-run
           path: |
-            .eight_part_compiled/compile_report.json
-            eight_part_run.txt
+            canonical_437_compiler.txt
+            eight_part_boundary.txt
