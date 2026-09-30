@@ -1,6 +1,6 @@
 name: Run eight-part canonical 437
 
-on:
+"on":
   push:
     branches: [eight-part-architecture]
     paths:
