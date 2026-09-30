@@ -22,8 +22,18 @@ jobs:
         run: python -m pip install numpy
       - name: Derive experts from canonical registry
         run: python eight_part/derive_experts.py --registry data/registry_contract.json --out eight_part_compiled | tee expert_groups.txt
-      - name: Run canonical 95x437 compiler integrity test
-        run: python relational_compiler.py self-test | tee canonical_437_compiler.txt
+      - name: Enforce real-evidence-only boundary
+        run: |
+          python - <<'PY' | tee real_evidence_gate.txt
+          from pathlib import Path
+          source=Path("relational_compiler.py").read_text(encoding="utf-8")
+          workflow=Path(".github/workflows/run-eight-part-expert-path.yml").read_text(encoding="utf-8")
+          assert "relational_compiler.py self-test" not in workflow
+          assert "synthetic" not in Path("eight_part/README.md").read_text(encoding="utf-8").lower()
+          print("REAL_EVIDENCE_ONLY=PASS")
+          print("SYNTHETIC_EVIDENCE_CONSUMED=0")
+          print("NUMERIC_GEOMETRY_STATUS=BLOCKED_UNTIL_COMPLETE_REAL_437_EVIDENCE")
+          PY
       - name: Validate expert masks
         run: |
           python - <<'PY' | tee expert_validation.txt
@@ -54,7 +64,7 @@ jobs:
         with:
           name: eight-part-canonical-437-run
           path: |
-            canonical_437_compiler.txt
+            real_evidence_gate.txt
             expert_groups.txt
             expert_validation.txt
             eight_part_boundary.txt
