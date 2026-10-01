@@ -806,7 +806,7 @@ def build(
     lexical = load_lexical_snapshots(lexical_snapshot)
     records_sha = sha256_file(records)
     registry_sha = sha256_file(registry_path)
-    lexical_sha = lexical_sha
+    lexical_sha = None if lexical_snapshot is None else sha256_file(lexical_snapshot)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     valid_counts = np.zeros(D, dtype=np.int64)
