@@ -652,6 +652,139 @@ def write_shard(
     return path
 
 
+
+def _checkpoint_path(out_dir: Path) -> Path:
+    return out_dir / "projection_checkpoint.json"
+
+
+def _atomic_json(path: Path, obj: dict) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(obj, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    tmp.replace(path)
+
+
+def _accumulate_saved_shard(
+    path: Path,
+    valid_counts: np.ndarray,
+    char_valid: np.ndarray,
+    min_value: np.ndarray,
+    max_value: np.ndarray,
+) -> int:
+    with np.load(path, allow_pickle=False) as z:
+        y = z["y"]
+        g = z["g"]
+        w = z["w"]
+        source_id = z["source_id"]
+        if g.ndim != 2 or g.shape[1] != D:
+            raise ValueError(f"{path}: invalid g shape {g.shape}")
+        n = int(g.shape[0])
+        if y.shape != (n,) or w.shape != (n,) or source_id.shape != (n,):
+            raise ValueError(f"{path}: inconsistent shard array lengths")
+        if np.any((y < ASCII_MIN) | (y > ASCII_MAX)):
+            raise ValueError(f"{path}: y outside ASCII95")
+        valid = np.isfinite(g)
+        valid_counts += valid.sum(axis=0, dtype=np.int64)
+        for c in range(V):
+            mask = y == (c + ASCII_MIN)
+            if np.any(mask):
+                char_valid[c] += valid[mask].sum(axis=0, dtype=np.int64)
+        for k in range(D):
+            vals = g[:, k]
+            finite = vals[np.isfinite(vals)]
+            if finite.size:
+                min_value[k] = min(min_value[k], float(finite.min()))
+                max_value[k] = max(max_value[k], float(finite.max()))
+        return n
+
+
+def _load_checkpoint(
+    out_dir: Path,
+    records_sha: str,
+    registry_sha: str,
+    lexical_sha: str | None,
+    shard_size: int,
+    truth_count: int,
+    valid_counts: np.ndarray,
+    char_valid: np.ndarray,
+    min_value: np.ndarray,
+    max_value: np.ndarray,
+) -> tuple[list[dict], int, int]:
+    path = _checkpoint_path(out_dir)
+    if not path.exists():
+        return [], 0, 0
+    checkpoint = json.loads(path.read_text(encoding="utf-8"))
+    expected = {
+        "format": "ascii95-projection-checkpoint-v1",
+        "records_sha256": records_sha,
+        "registry_sha256": registry_sha,
+        "lexical_snapshot_sha256": lexical_sha,
+        "shard_size": shard_size,
+        "ground_truth_occurrences": truth_count,
+    }
+    for key, value in expected.items():
+        if checkpoint.get(key) != value:
+            raise RuntimeError(
+                f"checkpoint mismatch for {key}: saved={checkpoint.get(key)!r} current={value!r}; "
+                "use a new --out directory or remove the incompatible checkpoint"
+            )
+    shards = checkpoint.get("completed_shards")
+    if not isinstance(shards, list):
+        raise RuntimeError("checkpoint completed_shards is not a list")
+    expected_start = 0
+    validated: list[dict] = []
+    for index, item in enumerate(shards):
+        if not isinstance(item, dict):
+            raise RuntimeError("checkpoint shard entry is not an object")
+        if int(item.get("index", -1)) != index:
+            raise RuntimeError("checkpoint shard indexes are not contiguous")
+        start = int(item.get("start_occurrence", -1))
+        end = int(item.get("end_occurrence_exclusive", -1))
+        if start != expected_start or end <= start:
+            raise RuntimeError("checkpoint occurrence ranges are not contiguous")
+        shard_path = out_dir / str(item.get("path", ""))
+        if not shard_path.exists():
+            raise RuntimeError(f"checkpoint shard missing: {shard_path}")
+        actual_sha = sha256_file(shard_path)
+        if actual_sha != item.get("sha256"):
+            raise RuntimeError(f"checkpoint shard hash mismatch: {shard_path}")
+        n = _accumulate_saved_shard(
+            shard_path, valid_counts, char_valid, min_value, max_value
+        )
+        if n != end - start or n != int(item.get("occurrences", -1)):
+            raise RuntimeError(f"checkpoint shard count mismatch: {shard_path}")
+        validated.append(item)
+        expected_start = end
+    if expected_start > truth_count:
+        raise RuntimeError("checkpoint exceeds current real occurrence count")
+    return validated, expected_start, len(validated)
+
+
+def _save_checkpoint(
+    out_dir: Path,
+    records_sha: str,
+    registry_sha: str,
+    lexical_sha: str | None,
+    shard_size: int,
+    truth_count: int,
+    shards: list[dict],
+) -> None:
+    _atomic_json(
+        _checkpoint_path(out_dir),
+        {
+            "format": "ascii95-projection-checkpoint-v1",
+            "records_sha256": records_sha,
+            "registry_sha256": registry_sha,
+            "lexical_snapshot_sha256": lexical_sha,
+            "shard_size": shard_size,
+            "ground_truth_occurrences": truth_count,
+            "completed_occurrences": (
+                0 if not shards else int(shards[-1]["end_occurrence_exclusive"])
+            ),
+            "completed_shards": shards,
+        },
+    )
+
+
 def build(
     records: Path,
     registry_path: Path,
@@ -671,41 +804,87 @@ def build(
         flush=True,
     )
     lexical = load_lexical_snapshots(lexical_snapshot)
-    projection_started = time.monotonic()
-    _progress("PROJECTION", 0, truth_count, projection_started)
+    records_sha = sha256_file(records)
+    registry_sha = sha256_file(registry_path)
+    lexical_sha = lexical_sha
 
     out_dir.mkdir(parents=True, exist_ok=True)
-    for old in out_dir.glob("evidence_*.npz"):
-        old.unlink()
-
     valid_counts = np.zeros(D, dtype=np.int64)
     char_valid = np.zeros((V, D), dtype=np.int64)
     min_value = np.full(D, np.inf, dtype=np.float64)
     max_value = np.full(D, -np.inf, dtype=np.float64)
 
+    shards, resume_occurrence, shard_index = _load_checkpoint(
+        out_dir,
+        records_sha,
+        registry_sha,
+        lexical_sha,
+        shard_size,
+        truth_count,
+        valid_counts,
+        char_valid,
+        min_value,
+        max_value,
+    )
+    projection_started = time.monotonic()
+    if resume_occurrence:
+        print(
+            f"CHECKPOINT RESUME | {resume_occurrence:,}/{truth_count:,} | "
+            f"SHARDS {len(shards):,} | {_resource_text()}",
+            flush=True,
+        )
+    else:
+        stale = sorted(out_dir.glob("evidence_*.npz"))
+        if stale:
+            raise RuntimeError(
+                "evidence shards exist without a matching checkpoint; "
+                "use a new --out directory or remove the stale shards"
+            )
+        print(f"CHECKPOINT NEW | 0/{truth_count:,} | {_resource_text()}", flush=True)
+    _progress("PROJECTION", resume_occurrence, truth_count, projection_started)
+
     y_buf: list[int] = []
     g_buf: list[np.ndarray] = []
     w_buf: list[float] = []
     source_buf: list[str] = []
-    shards: list[dict] = []
-    shard_index = 0
-    occurrences = 0
+    occurrences = resume_occurrence
+    stream_occurrence = 0
+    shard_start = resume_occurrence
     last_progress_time = projection_started
     progress_interval_seconds = 1.0
 
     def flush() -> None:
-        nonlocal shard_index
+        nonlocal shard_index, shard_start
         if not y_buf:
             return
         path = write_shard(out_dir, shard_index, y_buf, g_buf, w_buf, source_buf)
+        end_occurrence = shard_start + len(y_buf)
         shards.append(
             {
+                "index": shard_index,
                 "path": path.name,
                 "sha256": sha256_file(path),
                 "occurrences": len(y_buf),
+                "start_occurrence": shard_start,
+                "end_occurrence_exclusive": end_occurrence,
             }
         )
+        _save_checkpoint(
+            out_dir,
+            records_sha,
+            registry_sha,
+            lexical_sha,
+            shard_size,
+            truth_count,
+            shards,
+        )
+        print(
+            f"CHECKPOINT SAVED | {end_occurrence:,}/{truth_count:,} | "
+            f"SHARD {shard_index:06d} | {_resource_text()}",
+            flush=True,
+        )
         shard_index += 1
+        shard_start = end_occurrence
         y_buf.clear()
         g_buf.clear()
         w_buf.clear()
@@ -714,6 +893,10 @@ def build(
     for record in iter_jsonl(records):
         text, positions = validate_record(record)
         for p in positions:
+            if stream_occurrence < resume_occurrence:
+                stream_occurrence += 1
+                continue
+            stream_occurrence += 1
             code = ord(text[p])
             c = code - ASCII_MIN
             row = np.full(D, np.nan, dtype=np.float64)
@@ -801,9 +984,9 @@ def build(
     report = {
         "format": "ascii95-scalar-evidence-projection-v1",
         "records_file": str(records.resolve()),
-        "records_sha256": sha256_file(records),
+        "records_sha256": records_sha,
         "registry_file": str(registry_path.resolve()),
-        "registry_sha256": sha256_file(registry_path),
+        "registry_sha256": registry_sha,
         "lexical_snapshot_file": (
             None if lexical_snapshot is None else str(lexical_snapshot.resolve())
         ),
@@ -814,6 +997,8 @@ def build(
         "ground_truth_occurrences": truth_count,
         "projected_occurrences": occurrences,
         "dimension_count": D,
+        "checkpoint_file": str(_checkpoint_path(out_dir).resolve()),
+        "checkpoint_resume_occurrence": resume_occurrence,
         "shards": shards,
         "strict_full_437_ready": len(zero_coverage) == 0 and len(partial_coverage) == 0,
         "zero_coverage_dimensions": zero_coverage,
@@ -842,9 +1027,18 @@ def build(
         ),
     }
 
-    (out_dir / "binding_coverage.json").write_text(
-        json.dumps(report, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
+    _atomic_json(out_dir / "binding_coverage.json", report)
+    _atomic_json(
+        out_dir / "projection_complete.json",
+        {
+            "format": "ascii95-projection-complete-v1",
+            "records_sha256": records_sha,
+            "registry_sha256": registry_sha,
+            "lexical_snapshot_sha256": lexical_sha,
+            "projected_occurrences": occurrences,
+            "shard_count": len(shards),
+            "coverage_report_sha256": sha256_file(out_dir / "binding_coverage.json"),
+        },
     )
 
     if not report["strict_full_437_ready"] and not allow_incomplete:
