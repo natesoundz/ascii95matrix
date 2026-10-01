@@ -23,11 +23,103 @@ import json
 import keyword
 import math
 import re
+import subprocess
+import time
 from collections import Counter, defaultdict
 from pathlib import Path
 from typing import Iterator
 
 import numpy as np
+
+
+def _fmt_duration(seconds: float) -> str:
+    if not math.isfinite(seconds) or seconds < 0:
+        return "--:--:--"
+    seconds = int(seconds)
+    h, rem = divmod(seconds, 3600)
+    m, sec = divmod(rem, 60)
+    return f"{h:02d}:{m:02d}:{sec:02d}"
+
+
+def _ram_gb() -> float:
+    """Current process RSS in GiB; Windows path needs no third-party package."""
+    try:
+        import ctypes
+        from ctypes import wintypes
+        class PMC(ctypes.Structure):
+            _fields_ = [
+                ("cb", wintypes.DWORD),
+                ("PageFaultCount", wintypes.DWORD),
+                ("PeakWorkingSetSize", ctypes.c_size_t),
+                ("WorkingSetSize", ctypes.c_size_t),
+                ("QuotaPeakPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaPeakNonPagedPoolUsage", ctypes.c_size_t),
+                ("QuotaNonPagedPoolUsage", ctypes.c_size_t),
+                ("PagefileUsage", ctypes.c_size_t),
+                ("PeakPagefileUsage", ctypes.c_size_t),
+            ]
+        pmc = PMC()
+        pmc.cb = ctypes.sizeof(PMC)
+        handle = ctypes.windll.kernel32.GetCurrentProcess()
+        if ctypes.windll.psapi.GetProcessMemoryInfo(handle, ctypes.byref(pmc), pmc.cb):
+            return float(pmc.WorkingSetSize) / (1024.0 ** 3)
+    except Exception:
+        pass
+    return math.nan
+
+
+def _vram_gb() -> float:
+    """Report this process's NVIDIA compute VRAM when nvidia-smi is available."""
+    try:
+        cp = subprocess.run(
+            [
+                "nvidia-smi",
+                "--query-compute-apps=pid,used_memory",
+                "--format=csv,noheader,nounits",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=2,
+            check=False,
+        )
+        if cp.returncode != 0:
+            return math.nan
+        pid = str(__import__("os").getpid())
+        mib = 0.0
+        found = False
+        for line in cp.stdout.splitlines():
+            parts = [x.strip() for x in line.split(",")]
+            if len(parts) == 2 and parts[0] == pid:
+                mib += float(parts[1])
+                found = True
+        return mib / 1024.0 if found else 0.0
+    except Exception:
+        return math.nan
+
+
+def _resource_text() -> str:
+    ram = _ram_gb()
+    vram = _vram_gb()
+    rs = "N/A" if not math.isfinite(ram) else f"{ram:.2f} GB"
+    vs = "N/A" if not math.isfinite(vram) else f"{vram:.2f} GB"
+    return f"RAM {rs} | VRAM {vs}"
+
+
+def _progress(stage: str, done: int, total: int, started: float) -> None:
+    elapsed = max(0.0, time.monotonic() - started)
+    pct = 100.0 * done / total if total else 0.0
+    remaining = (
+        elapsed * (total - done) / done
+        if done > 0 and total > done
+        else 0.0 if done >= total else math.nan
+    )
+    print(
+        f"{stage} | {done:,}/{total:,} | {pct:6.2f}% | "
+        f"ELAPSED {_fmt_duration(elapsed)} | REMAINING {_fmt_duration(remaining)} | "
+        f"{_resource_text()}",
+        flush=True,
+    )
 
 ASCII_MIN = 32
 ASCII_MAX = 126
@@ -570,8 +662,17 @@ def build(
 ) -> dict:
     registry = json.loads(registry_path.read_text(encoding="utf-8"))
     dimensions, by_id = index_dimensions(registry)
+    prepass_started = time.monotonic()
+    print(f"PRECOUNT START | {_resource_text()}", flush=True)
     stats, record_count, truth_count = corpus_pass(records)
+    print(
+        f"PRECOUNT DONE | RECORDS {record_count:,} | OCCURRENCES {truth_count:,} | "
+        f"ELAPSED {_fmt_duration(time.monotonic() - prepass_started)} | {_resource_text()}",
+        flush=True,
+    )
     lexical = load_lexical_snapshots(lexical_snapshot)
+    projection_started = time.monotonic()
+    _progress("PROJECTION", 0, truth_count, projection_started)
 
     out_dir.mkdir(parents=True, exist_ok=True)
     for old in out_dir.glob("evidence_*.npz"):
@@ -589,6 +690,8 @@ def build(
     shards: list[dict] = []
     shard_index = 0
     occurrences = 0
+    last_progress_time = projection_started
+    progress_interval_seconds = 1.0
 
     def flush() -> None:
         nonlocal shard_index
@@ -642,10 +745,20 @@ def build(
             w_buf.append(1.0)
             source_buf.append(source_id_for(record, p))
             occurrences += 1
+            now = time.monotonic()
+            if now - last_progress_time >= progress_interval_seconds:
+                _progress("PROJECTION", occurrences, truth_count, projection_started)
+                last_progress_time = now
             if len(y_buf) >= shard_size:
                 flush()
 
     flush()
+    _progress("PROJECTION", occurrences, truth_count, projection_started)
+    print(
+        f"PROJECTION DONE | {occurrences:,}/{truth_count:,} | "
+        f"ELAPSED {_fmt_duration(time.monotonic() - projection_started)} | {_resource_text()}",
+        flush=True,
+    )
 
     per_dimension = []
     zero_coverage = []
@@ -775,8 +888,11 @@ def main() -> int:
             args.allow_incomplete,
             lexical_snapshot,
         )
+    except KeyboardInterrupt:
+        print(f"PROJECTION BLOCKED | INTERRUPTED BY USER | {_resource_text()}", flush=True)
+        return 130
     except (ValueError, OSError, RuntimeError, json.JSONDecodeError) as exc:
-        print(f"ERROR: {exc}")
+        print(f"PROJECTION FAILED | {exc} | {_resource_text()}", flush=True)
         return 1
     print(
         json.dumps(
@@ -792,6 +908,13 @@ def main() -> int:
             },
             indent=2,
         )
+    )
+    status = "DONE" if report["strict_full_437_ready"] else "BLOCKED"
+    print(
+        f"{status} | zero={len(report['zero_coverage_dimensions'])} | "
+        f"partial={len(report['partial_character_coverage_dimensions'])} | "
+        f"{_resource_text()}",
+        flush=True,
     )
     return 0 if report["strict_full_437_ready"] or args.allow_incomplete else 1
 
