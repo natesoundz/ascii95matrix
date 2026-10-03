@@ -1,0 +1,21 @@
+name: HAR TopoKV compiled v1
+
+on:
+  push:
+    branches: [har-topokv-compiled-v1]
+    paths:
+      - "experiments/har_topokv_compiled_v1.py"
+      - "experiments/test_har_topokv_compiled_v1.py"
+      - ".github/workflows/test-har-topokv-compiled-v1.yml"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: python -m pip install -r requirements-torch.txt
+      - run: python -m unittest experiments.test_har_topokv_compiled_v1 -v
