@@ -1,0 +1,28 @@
+name: Closed-loop compiler static validation
+
+on:
+  push:
+    branches: [closed-loop-compiler-v1]
+    paths:
+      - "closed_loop/**"
+      - ".github/workflows/test-closed-loop-compiler-v1.yml"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Syntax check
+        run: python -m py_compile closed_loop/closed_loop_compiler_v1.py
+      - name: Import contract check
+        run: |
+          python -m pip install numpy torch
+          python - <<'PY'
+          import closed_loop.closed_loop_compiler_v1 as c
+          assert c.V == 95
+          print("CLOSED_LOOP_IMPORT_OK")
+          PY
