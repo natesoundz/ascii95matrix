@@ -1,0 +1,2947 @@
+{
+ "stats": {
+  "pronunciation_rows": 135166,
+  "skipped_lemma": 9311,
+  "aligned_lexemes": 34223,
+  "skipped_not_1to1": 91611,
+  "skipped_dirty_phones": 21
+ },
+ "letters_with_candidates": 26,
+ "candidate_cells": 240,
+ "strong_cells": 158,
+ "gate_violations": [],
+ "bindings": {
+  "a": {
+   "phonetic.vowel_tongue_body_position.mid": {
+    "support": 9767,
+    "total": 26079,
+    "share": 0.375,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.central": {
+    "support": 9767,
+    "total": 26079,
+    "share": 0.375,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 24919,
+    "total": 26079,
+    "share": 0.956,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 26079,
+    "total": 26079,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 25321,
+    "total": 26079,
+    "share": 0.971,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 25756,
+    "total": 26079,
+    "share": 0.988,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.front": {
+    "support": 8333,
+    "total": 26079,
+    "share": 0.32,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "AA",
+     "AE"
+    ]
+   }
+  },
+  "b": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 5320,
+    "total": 5388,
+    "share": 0.987,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 5301,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 5300,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.bilabial": {
+    "support": 5296,
+    "total": 5388,
+    "share": 0.983,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 5296,
+    "total": 5388,
+    "share": 0.983,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 5301,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 5304,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 5304,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 5300,
+    "total": 5388,
+    "share": 0.984,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 5388,
+    "total": 5388,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "B",
+     "UW",
+     "AH"
+    ]
+   }
+  },
+  "c": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 8134,
+    "total": 8672,
+    "share": 0.938,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 6663,
+    "total": 8672,
+    "share": 0.768,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.velar": {
+    "support": 6633,
+    "total": 8672,
+    "share": 0.765,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 6633,
+    "total": 8672,
+    "share": 0.765,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 6634,
+    "total": 8672,
+    "share": 0.765,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 6634,
+    "total": 8672,
+    "share": 0.765,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 8111,
+    "total": 8672,
+    "share": 0.935,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 8672,
+    "total": 8672,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "AH"
+    ]
+   }
+  },
+  "d": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 8983,
+    "total": 9095,
+    "share": 0.988,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 8924,
+    "total": 9095,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 8958,
+    "total": 9095,
+    "share": 0.985,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 8928,
+    "total": 9095,
+    "share": 0.982,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 8923,
+    "total": 9095,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 8958,
+    "total": 9095,
+    "share": 0.985,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 8924,
+    "total": 9095,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 8924,
+    "total": 9095,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 8924,
+    "total": 9095,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 8928,
+    "total": 9095,
+    "share": 0.982,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 9095,
+    "total": 9095,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "D",
+     "JH",
+     "AH"
+    ]
+   }
+  },
+  "e": {
+   "phonetic.vowel_tongue_body_position.front": {
+    "support": 9943,
+    "total": 18630,
+    "share": 0.534,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 16152,
+    "total": 18630,
+    "share": 0.867,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 18630,
+    "total": 18630,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 16345,
+    "total": 18630,
+    "share": 0.877,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 17847,
+    "total": 18630,
+    "share": 0.958,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.open_mid": {
+    "support": 7109,
+    "total": 18630,
+    "share": 0.382,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "EH",
+     "AH",
+     "IH"
+    ]
+   }
+  },
+  "f": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 2478,
+    "total": 2529,
+    "share": 0.98,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.continuant": {
+    "support": 2458,
+    "total": 2529,
+    "share": 0.972,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labiodental": {
+    "support": 2446,
+    "total": 2529,
+    "share": 0.967,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 2446,
+    "total": 2529,
+    "share": 0.967,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.fricative": {
+    "support": 2458,
+    "total": 2529,
+    "share": 0.972,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 2474,
+    "total": 2529,
+    "share": 0.978,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 2529,
+    "total": 2529,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "F",
+     "AH",
+     "K"
+    ]
+   }
+  },
+  "g": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 4927,
+    "total": 4990,
+    "share": 0.987,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 4036,
+    "total": 4990,
+    "share": 0.809,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 4920,
+    "total": 4990,
+    "share": 0.986,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.velar": {
+    "support": 4005,
+    "total": 4990,
+    "share": 0.803,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 4005,
+    "total": 4990,
+    "share": 0.803,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 3773,
+    "total": 4990,
+    "share": 0.756,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 3773,
+    "total": 4990,
+    "share": 0.756,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 4920,
+    "total": 4990,
+    "share": 0.986,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 4990,
+    "total": 4990,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "G",
+     "JH",
+     "NG"
+    ]
+   }
+  },
+  "h": {
+   "phonetic.phonetic_articulatory_general.continuant": {
+    "support": 2105,
+    "total": 2305,
+    "share": 0.913,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.spread_glottis": {
+    "support": 2054,
+    "total": 2305,
+    "share": 0.891,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.glottal": {
+    "support": 2054,
+    "total": 2305,
+    "share": 0.891,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.laryngeal": {
+    "support": 2054,
+    "total": 2305,
+    "share": 0.891,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.fricative": {
+    "support": 2105,
+    "total": 2305,
+    "share": 0.913,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 2130,
+    "total": 2305,
+    "share": 0.924,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.spread_glottis": {
+    "support": 2054,
+    "total": 2305,
+    "share": 0.891,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 2305,
+    "total": 2305,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "HH",
+     "W",
+     "AH"
+    ]
+   }
+  },
+  "i": {
+   "phonetic.phonetic_articulatory_general.high": {
+    "support": 14534,
+    "total": 18657,
+    "share": 0.779,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 15927,
+    "total": 18657,
+    "share": 0.854,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 18657,
+    "total": 18657,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 17247,
+    "total": 18657,
+    "share": 0.924,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 17825,
+    "total": 18657,
+    "share": 0.955,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.near_close": {
+    "support": 8916,
+    "total": 18657,
+    "share": 0.478,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.near_front": {
+    "support": 8915,
+    "total": 18657,
+    "share": 0.478,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IH",
+     "IY",
+     "AH"
+    ]
+   }
+  },
+  "j": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 671,
+    "total": 901,
+    "share": 0.745,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 671,
+    "total": 901,
+    "share": 0.745,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.distributed": {
+    "support": 670,
+    "total": 901,
+    "share": 0.744,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.strident": {
+    "support": 670,
+    "total": 901,
+    "share": 0.744,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.delayed_release": {
+    "support": 654,
+    "total": 901,
+    "share": 0.726,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 870,
+    "total": 901,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.postalveolar": {
+    "support": 670,
+    "total": 901,
+    "share": 0.744,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 671,
+    "total": 901,
+    "share": 0.745,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.distributed": {
+    "support": 670,
+    "total": 901,
+    "share": 0.744,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.affricate": {
+    "support": 654,
+    "total": 901,
+    "share": 0.726,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 870,
+    "total": 901,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 901,
+    "total": 901,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "JH",
+     "Y",
+     "HH"
+    ]
+   }
+  },
+  "k": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 4634,
+    "total": 4667,
+    "share": 0.993,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 4654,
+    "total": 4667,
+    "share": 0.997,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.velar": {
+    "support": 4632,
+    "total": 4667,
+    "share": 0.993,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 4632,
+    "total": 4667,
+    "share": 0.993,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 4631,
+    "total": 4667,
+    "share": 0.992,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 4631,
+    "total": 4667,
+    "share": 0.992,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 4632,
+    "total": 4667,
+    "share": 0.993,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 4667,
+    "total": 4667,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "UW",
+     "AH"
+    ]
+   }
+  },
+  "l": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 11671,
+    "total": 13241,
+    "share": 0.881,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 13119,
+    "total": 13241,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.lateral": {
+    "support": 11547,
+    "total": 13241,
+    "share": 0.872,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 11621,
+    "total": 13241,
+    "share": 0.878,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 11576,
+    "total": 13241,
+    "share": 0.874,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 11565,
+    "total": 13241,
+    "share": 0.873,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 11576,
+    "total": 13241,
+    "share": 0.874,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 11576,
+    "total": 13241,
+    "share": 0.874,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 11621,
+    "total": 13241,
+    "share": 0.878,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.approximant": {
+    "support": 11554,
+    "total": 13241,
+    "share": 0.873,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.lateral_approximant": {
+    "support": 11547,
+    "total": 13241,
+    "share": 0.872,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 11565,
+    "total": 13241,
+    "share": 0.873,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 13241,
+    "total": 13241,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "L",
+     "AH",
+     "IH"
+    ]
+   }
+  },
+  "m": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 8949,
+    "total": 9125,
+    "share": 0.981,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 9087,
+    "total": 9125,
+    "share": 0.996,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.nasal": {
+    "support": 8909,
+    "total": 9125,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 8947,
+    "total": 9125,
+    "share": 0.98,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.bilabial": {
+    "support": 8912,
+    "total": 9125,
+    "share": 0.977,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 8913,
+    "total": 9125,
+    "share": 0.977,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.nasal": {
+    "support": 8909,
+    "total": 9125,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 8947,
+    "total": 9125,
+    "share": 0.98,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 9125,
+    "total": 9125,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "M",
+     "UW",
+     "AH"
+    ]
+   }
+  },
+  "n": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 18520,
+    "total": 19146,
+    "share": 0.967,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 19088,
+    "total": 19146,
+    "share": 0.997,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.nasal": {
+    "support": 18458,
+    "total": 19146,
+    "share": 0.964,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 17463,
+    "total": 19146,
+    "share": 0.912,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 17466,
+    "total": 19146,
+    "share": 0.912,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 18491,
+    "total": 19146,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 17466,
+    "total": 19146,
+    "share": 0.912,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 17466,
+    "total": 19146,
+    "share": 0.912,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 17463,
+    "total": 19146,
+    "share": 0.912,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.nasal": {
+    "support": 18458,
+    "total": 19146,
+    "share": 0.964,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 18491,
+    "total": 19146,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 19146,
+    "total": 19146,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "N",
+     "NG",
+     "IH"
+    ]
+   }
+  },
+  "o": {
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 12776,
+    "total": 16587,
+    "share": 0.77,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.round": {
+    "support": 9800,
+    "total": 16587,
+    "share": 0.591,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.tense": {
+    "support": 7235,
+    "total": 16587,
+    "share": 0.436,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.close_mid": {
+    "support": 7162,
+    "total": 16587,
+    "share": 0.432,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.back": {
+    "support": 12731,
+    "total": 16587,
+    "share": 0.768,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.rounded": {
+    "support": 9794,
+    "total": 16587,
+    "share": 0.59,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 16587,
+    "total": 16587,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 16209,
+    "total": 16587,
+    "share": 0.977,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 16378,
+    "total": 16587,
+    "share": 0.987,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 6366,
+    "total": 16587,
+    "share": 0.384,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "OW",
+     "AH",
+     "AA"
+    ]
+   }
+  },
+  "p": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 5408,
+    "total": 5444,
+    "share": 0.993,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 5373,
+    "total": 5444,
+    "share": 0.987,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.bilabial": {
+    "support": 5249,
+    "total": 5444,
+    "share": 0.964,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 5267,
+    "total": 5444,
+    "share": 0.967,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 5373,
+    "total": 5444,
+    "share": 0.987,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 5250,
+    "total": 5444,
+    "share": 0.964,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 5250,
+    "total": 5444,
+    "share": 0.964,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 5391,
+    "total": 5444,
+    "share": 0.99,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 5444,
+    "total": 5444,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "P",
+     "S",
+     "F"
+    ]
+   }
+  },
+  "q": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 427,
+    "total": 428,
+    "share": 0.998,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 424,
+    "total": 428,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.velar": {
+    "support": 424,
+    "total": 428,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 424,
+    "total": 428,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 424,
+    "total": 428,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 424,
+    "total": 428,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 427,
+    "total": 428,
+    "share": 0.998,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 428,
+    "total": 428,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "IH"
+    ]
+   }
+  },
+  "r": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 13366,
+    "total": 14176,
+    "share": 0.943,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 14020,
+    "total": 14176,
+    "share": 0.989,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 13283,
+    "total": 14176,
+    "share": 0.937,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 13245,
+    "total": 14176,
+    "share": 0.934,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 13282,
+    "total": 14176,
+    "share": 0.937,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 13283,
+    "total": 14176,
+    "share": 0.937,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.approximant": {
+    "support": 13197,
+    "total": 14176,
+    "share": 0.931,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 13245,
+    "total": 14176,
+    "share": 0.934,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 14176,
+    "total": 14176,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "R",
+     "ER",
+     "UH"
+    ]
+   }
+  },
+  "s": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 15396,
+    "total": 15744,
+    "share": 0.978,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.continuant": {
+    "support": 15360,
+    "total": 15744,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 15342,
+    "total": 15744,
+    "share": 0.974,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 15385,
+    "total": 15744,
+    "share": 0.977,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.strident": {
+    "support": 15360,
+    "total": 15744,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 15342,
+    "total": 15744,
+    "share": 0.974,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 15385,
+    "total": 15744,
+    "share": 0.977,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 15342,
+    "total": 15744,
+    "share": 0.974,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.fricative": {
+    "support": 15360,
+    "total": 15744,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.sibilant": {
+    "support": 15360,
+    "total": 15744,
+    "share": 0.976,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 11761,
+    "total": 15744,
+    "share": 0.747,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 15744,
+    "total": 15744,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "S",
+     "Z",
+     "AH"
+    ]
+   }
+  },
+  "t": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 13535,
+    "total": 14166,
+    "share": 0.955,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 13377,
+    "total": 14166,
+    "share": 0.944,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 13507,
+    "total": 14166,
+    "share": 0.953,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 13359,
+    "total": 14166,
+    "share": 0.943,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 13507,
+    "total": 14166,
+    "share": 0.953,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 13377,
+    "total": 14166,
+    "share": 0.944,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 13221,
+    "total": 14166,
+    "share": 0.933,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 13221,
+    "total": 14166,
+    "share": 0.933,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 13476,
+    "total": 14166,
+    "share": 0.951,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 14166,
+    "total": 14166,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "T",
+     "EY",
+     "UW"
+    ]
+   }
+  },
+  "u": {
+   "phonetic.vowel_tongue_body_position.mid": {
+    "support": 2863,
+    "total": 6822,
+    "share": 0.42,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.central": {
+    "support": 2863,
+    "total": 6822,
+    "share": 0.42,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 2956,
+    "total": 6822,
+    "share": 0.433,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 6822,
+    "total": 6822,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 5074,
+    "total": 6822,
+    "share": 0.744,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 6758,
+    "total": 6822,
+    "share": 0.991,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.high": {
+    "support": 2956,
+    "total": 6822,
+    "share": 0.433,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.round": {
+    "support": 2372,
+    "total": 6822,
+    "share": 0.348,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.rounded": {
+    "support": 2100,
+    "total": 6822,
+    "share": 0.308,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "AH",
+     "UW",
+     "Y"
+    ]
+   }
+  },
+  "v": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 2899,
+    "total": 2986,
+    "share": 0.971,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.continuant": {
+    "support": 2885,
+    "total": 2986,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 2876,
+    "total": 2986,
+    "share": 0.963,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labiodental": {
+    "support": 2885,
+    "total": 2986,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 2887,
+    "total": 2986,
+    "share": 0.967,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.fricative": {
+    "support": 2885,
+    "total": 2986,
+    "share": 0.966,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 2876,
+    "total": 2986,
+    "share": 0.963,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 2986,
+    "total": 2986,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "V",
+     "IH",
+     "F"
+    ]
+   }
+  },
+  "w": {
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 1148,
+    "total": 1423,
+    "share": 0.807,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.round": {
+    "support": 1123,
+    "total": 1423,
+    "share": 0.789,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 1138,
+    "total": 1423,
+    "share": 0.8,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial_velar": {
+    "support": 1066,
+    "total": 1423,
+    "share": 0.749,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.labial": {
+    "support": 1266,
+    "total": 1423,
+    "share": 0.89,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 1071,
+    "total": 1423,
+    "share": 0.753,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.approximant": {
+    "support": 1072,
+    "total": 1423,
+    "share": 0.753,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 1138,
+    "total": 1423,
+    "share": 0.8,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 1423,
+    "total": 1423,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "W",
+     "F",
+     "V"
+    ]
+   }
+  },
+  "x": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 803,
+    "total": 804,
+    "share": 0.999,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiceless": {
+    "support": 713,
+    "total": 804,
+    "share": 0.887,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 804,
+    "total": 804,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.back": {
+    "support": 613,
+    "total": 804,
+    "share": 0.762,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.velar": {
+    "support": 613,
+    "total": 804,
+    "share": 0.762,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.dorsal": {
+    "support": 613,
+    "total": 804,
+    "share": 0.762,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.stop": {
+    "support": 613,
+    "total": 804,
+    "share": 0.762,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.plosive": {
+    "support": 613,
+    "total": 804,
+    "share": 0.762,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "K",
+     "S",
+     "G"
+    ]
+   }
+  },
+  "y": {
+   "phonetic.phonetic_articulatory_general.high": {
+    "support": 3226,
+    "total": 3777,
+    "share": 0.854,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.tense": {
+    "support": 2334,
+    "total": 3777,
+    "share": 0.618,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.close": {
+    "support": 2316,
+    "total": 3777,
+    "share": 0.613,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.front": {
+    "support": 2335,
+    "total": 3777,
+    "share": 0.618,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.vowel_tongue_body_position.unrounded": {
+    "support": 2881,
+    "total": 3777,
+    "share": 0.763,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 3777,
+    "total": 3777,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.syllabic": {
+    "support": 3330,
+    "total": 3777,
+    "share": 0.882,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.sonorant": {
+    "support": 3753,
+    "total": 3777,
+    "share": 0.994,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "IY",
+     "IH",
+     "AY"
+    ]
+   }
+  },
+  "z": {
+   "phonetic.phonetic_articulatory_general.consonantal": {
+    "support": 2020,
+    "total": 2061,
+    "share": 0.98,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.continuant": {
+    "support": 1938,
+    "total": 2061,
+    "share": 0.94,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.anterior": {
+    "support": 2016,
+    "total": 2061,
+    "share": 0.978,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.coronal": {
+    "support": 2018,
+    "total": 2061,
+    "share": 0.979,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.strident": {
+    "support": 1938,
+    "total": 2061,
+    "share": 0.94,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.phonetic_articulatory_general.voice": {
+    "support": 1505,
+    "total": 2061,
+    "share": 0.73,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.alveolar": {
+    "support": 2015,
+    "total": 2061,
+    "share": 0.978,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.coronal": {
+    "support": 2018,
+    "total": 2061,
+    "share": 0.979,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.consonant_place_of_articulation.anterior": {
+    "support": 2016,
+    "total": 2061,
+    "share": 0.978,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.fricative": {
+    "support": 1938,
+    "total": 2061,
+    "share": 0.94,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.consonant_manner_of_articulation.sibilant": {
+    "support": 1938,
+    "total": 2061,
+    "share": 0.94,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.laryngeal_phonation.voiced": {
+    "support": 1505,
+    "total": 2061,
+    "share": 0.73,
+    "tier": "partial",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   },
+   "phonetic.airstream.pulmonic": {
+    "support": 2061,
+    "total": 2061,
+    "share": 1.0,
+    "tier": "strong",
+    "registry_status": "E",
+    "top_phones": [
+     "Z",
+     "S",
+     "T"
+    ]
+   }
+  }
+ }
+}
