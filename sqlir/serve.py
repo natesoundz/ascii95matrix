@@ -20,7 +20,14 @@ def dispatch(model: CompiledModel, request: dict) -> dict:
         if operation == "forward":
             result = model.forward(args["text"])
         elif operation == "lookup":
-            result = model.lookup(args["query_id"], args.get("key"))
+            result = model.lookup(
+                args["query_id"],
+                args.get("key"),
+                offset=args.get("offset", 0),
+                limit=args.get("limit"),
+            )
+        elif operation == "count":
+            result = model.lookup_count(args["query_id"], args.get("key"))
         elif operation == "row":
             result = model.row(args["table"], args["rowid"])
         elif operation == "list_queries":

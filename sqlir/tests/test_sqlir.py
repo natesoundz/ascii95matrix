@@ -218,6 +218,28 @@ class CompiledSqlirTests(unittest.TestCase):
             self.model.lookup("eq:indexed_child.parent_id", 9999), []
         )
 
+    def test_paginated_fixed_and_index_lookup(self) -> None:
+        cases = [
+            ("fixed:conical.Q", None),
+            ("eq:indexed_child.parent_id", 2),
+        ]
+        for query_id, key in cases:
+            unpaginated = self.model.lookup(query_id, key)
+            pages = []
+            count = self.model.lookup_count(query_id, key)
+            for offset in range(0, count, 7):
+                pages.extend(
+                    self.model.lookup(query_id, key, offset=offset, limit=7)
+                )
+            self.assertEqual(pages, unpaginated)
+            self.assertEqual(count, len(unpaginated))
+
+    def test_lookup_rejects_negative_pagination(self) -> None:
+        with self.assertRaises(ValueError):
+            self.model.lookup("fixed:conical.Q", offset=-1)
+        with self.assertRaises(ValueError):
+            self.model.lookup("fixed:conical.Q", limit=-1)
+
     def test_without_rowid_table_uses_primary_key_for_row(self) -> None:
         self.assertEqual(
             self.model.row("without_rowid_store", "b"), ["b", None]
@@ -249,6 +271,11 @@ class CompiledSqlirTests(unittest.TestCase):
                 "op": "lookup",
                 "args": {"query_id": "eq:indexed_child.parent_id", "key": 2},
             },
+            {
+                "id": 6,
+                "op": "count",
+                "args": {"query_id": "eq:indexed_child.parent_id", "key": 2},
+            },
             {"id": 3, "op": "row", "args": {"table": "lexeme", "rowid": 1}},
             {"id": 4, "op": "list_queries", "args": {}},
             {"id": 5, "op": "manifest", "args": {}},
@@ -268,13 +295,14 @@ class CompiledSqlirTests(unittest.TestCase):
             check=True,
         )
         responses = [json.loads(line) for line in process.stdout.splitlines()]
-        self.assertEqual([response["id"] for response in responses], [1, 2, 3, 4, 5])
+        self.assertEqual([response["id"] for response in responses], [1, 2, 6, 3, 4, 5])
         self.assertTrue(all(response["ok"] for response in responses))
         self.assertEqual(responses[0]["result"]["input"], "Earth")
         self.assertIsInstance(responses[1]["result"], list)
-        self.assertIsInstance(responses[2]["result"], list)
-        self.assertTrue(responses[3]["result"])
-        self.assertIn("segments", responses[4]["result"])
+        self.assertEqual(responses[2]["result"], len(responses[1]["result"]))
+        self.assertIsInstance(responses[3]["result"], list)
+        self.assertTrue(responses[4]["result"])
+        self.assertIn("segments", responses[5]["result"])
 
 
 if __name__ == "__main__":

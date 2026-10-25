@@ -13,6 +13,7 @@ python -m sqlir.serve --model MODEL_DIR
 The server accepts JSON-lines requests on stdin/stdout by default. Use
 `python -m sqlir.serve --model MODEL_DIR --http PORT` for a local HTTP endpoint
 bound to `127.0.0.1`. For a fast channel-only compile, add `--only-channels`.
+Lookup requests accept `offset` and `limit` for pagination; use the `count` operation to get a result count without decoding rows.
 `sqlir_exe.py` dispatches `serve`, `verify`, and `compile` for the optional
 PyInstaller executable; the artifact directory remains external to the exe.
 

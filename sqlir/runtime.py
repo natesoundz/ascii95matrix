@@ -31,6 +31,10 @@ class CompiledModel:
         self.manifest = json.loads(
             (self.directory / "manifest.json").read_text(encoding="utf-8")
         )
+        if self.manifest.get("format_version") != 2:
+            raise ValueError(
+                f"Unsupported model format version: {self.manifest.get('format_version')}"
+            )
         self._verify_policy = verify
         self._blob = np.memmap(
             self.directory / "blob.bin", dtype=np.uint8, mode="r"
@@ -107,15 +111,6 @@ class CompiledModel:
             return None
         return int(indptr[low]), int(indptr[low + 1])
 
-    def _row_from_table_index(self, table: str, index: int) -> Any:
-        schema = self.manifest["tables"][table]
-        segments = schema["segments"]
-        rowids = self._segment_array(segments["rowids"])
-        if index < 0 or index >= len(rowids):
-            raise IndexError(f"Row index out of range for {table}: {index}")
-        rowid = int(rowids[index])
-        return self.row(table, rowid)
-
     def _rows_by_rowids(self, table: str, rowids: np.ndarray) -> list:
         schema = self.manifest["tables"][table]
         segments = schema["segments"]
@@ -136,20 +131,64 @@ class CompiledModel:
             result.append(json.loads(bytes(rows[start:end]).decode("utf-8")))
         return result
 
-    def lookup(self, query_id: str, key: Any = None) -> list:
+    @staticmethod
+    def _validate_pagination(offset: int, limit: int | None) -> None:
+        if not isinstance(offset, int) or isinstance(offset, bool) or offset < 0:
+            raise ValueError("offset must be a nonnegative integer")
+        if limit is not None and (
+            not isinstance(limit, int) or isinstance(limit, bool) or limit < 0
+        ):
+            raise ValueError("limit must be a nonnegative integer or None")
+
+    def _result_rows(self, query: dict, start: int, end: int) -> list:
+        rows_name, offsets_name = query["segments"]
+        rows = self._segment_bytes(rows_name)
+        offsets = self._segment_array(offsets_name)
+        return [
+            json.loads(
+                bytes(rows[int(offsets[index]) : int(offsets[index + 1])]).decode(
+                    "utf-8"
+                )
+            )
+            for index in range(start, end)
+        ]
+
+    def lookup(
+        self,
+        query_id: str,
+        key: Any = None,
+        offset: int = 0,
+        limit: int | None = None,
+    ) -> list:
+        self._validate_pagination(offset, limit)
         if query_id not in self._queries:
             raise KeyError(f"Unknown query id: {query_id}")
         query = self._queries[query_id]
         if query["kind"] in {"fixed", "count"}:
-            raw = self._segment_bytes(query["segments"][0])
-            return json.loads(bytes(raw).decode("utf-8"))
+            offsets = self._segment_array(query["segments"][1])
+            count = len(offsets) - 1
+            start = min(offset, count)
+            end = count if limit is None else min(count, start + limit)
+            return self._result_rows(query, start, end)
         bounds = self._find_key(query, key)
         if bounds is None:
             return []
         _, _, _, indices_name = query["segments"]
         indices = self._segment_array(indices_name)
-        start, end = bounds
+        start = bounds[0] + offset
+        end = bounds[1] if limit is None else min(bounds[1], start + limit)
+        if start >= end:
+            return []
         return self._rows_by_rowids(query["table"], indices[start:end])
+
+    def lookup_count(self, query_id: str, key: Any = None) -> int:
+        if query_id not in self._queries:
+            raise KeyError(f"Unknown query id: {query_id}")
+        query = self._queries[query_id]
+        if query["kind"] in {"fixed", "count"}:
+            return len(self._segment_array(query["segments"][1])) - 1
+        bounds = self._find_key(query, key)
+        return 0 if bounds is None else bounds[1] - bounds[0]
 
     def row(self, table: str, rowid: Any) -> list:
         if table not in self.manifest["tables"]:

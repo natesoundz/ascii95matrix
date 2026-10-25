@@ -383,18 +383,22 @@ def _result_segment(
     con: sqlite3.Connection, spec: QuerySpec, store: SegmentStore
 ) -> tuple[list[str], int]:
     segment_id = hashlib.sha256(spec.id.encode("utf-8")).hexdigest()[:16]
-    result_name = f"query:{segment_id}:results"
-    writer = store.writer(result_name, "uint8")
-    writer.write(b"[")
+    rows_name = f"query:{segment_id}:rows"
+    offsets_name = f"query:{segment_id}:offsets"
+    rows_writer = store.writer(rows_name, "uint8")
+    offsets_writer = store.writer(offsets_name, "<i8")
+    offsets_writer.write_i64(0)
     count = 0
+    byte_offset = 0
     for row in con.execute(spec.sql):
-        if count:
-            writer.write(b",")
-        writer.write(canonical_row(row))
+        encoded = canonical_row(row)
+        rows_writer.write(encoded)
+        byte_offset += len(encoded)
+        offsets_writer.write_i64(byte_offset)
         count += 1
-    writer.write(b"]")
-    writer.finish([writer.nbytes])
-    return [result_name], count
+    rows_writer.finish([byte_offset])
+    offsets_writer.finish([count + 1])
+    return [rows_name, offsets_name], count
 
 
 def _write_operator_segments(
@@ -514,7 +518,7 @@ def compile_model(db: Path, workbook: Path, output: Path, only_channels: bool = 
                 }
 
         manifest = {
-            "format_version": 1,
+            "format_version": 2,
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "db_path": str(db),
             "db_sha256": db_hash,

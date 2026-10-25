@@ -18,6 +18,9 @@ from .catalog import canonical_json, canonical_row, json_value
 from .runtime import CompiledModel
 
 
+PAGE_SIZE = 10_000
+
+
 def _sample_positions(count: int, samples: int) -> list[int]:
     if count == 0:
         return []
@@ -28,7 +31,7 @@ def _sample_positions(count: int, samples: int) -> list[int]:
     return sorted(set(np.linspace(0, count - 1, num=samples, dtype=np.int64).tolist()))
 
 
-def _live_rows(con, query: dict, key: Any = None) -> list[list]:
+def _live_row_pages(con, query: dict, key: Any = None):
     if query["kind"] in {"fixed", "count"}:
         cursor = con.execute(query["sql"])
     else:
@@ -48,11 +51,31 @@ def _live_rows(con, query: dict, key: Any = None) -> list[list]:
         else:
             params = tuple(key)
         cursor = con.execute(query["sql"], params)
-    return [[json_value(value) for value in row] for row in cursor]
+    while rows := cursor.fetchmany(PAGE_SIZE):
+        yield [[json_value(value) for value in row] for row in rows]
 
 
 def _canonical_rows(rows: list) -> bytes:
     return canonical_json(rows)
+
+
+def _compare_paged(
+    model: CompiledModel, con, query: dict, key: Any = None
+) -> tuple[bool, int, list[int]]:
+    query_id = query["id"]
+    actual_count = model.lookup_count(query_id, key)
+    expected_count = 0
+    mismatched_offsets = []
+    for expected_page in _live_row_pages(con, query, key):
+        actual_page = model.lookup(
+            query_id, key, offset=expected_count, limit=PAGE_SIZE
+        )
+        if _canonical_rows(actual_page) != _canonical_rows(expected_page):
+            mismatched_offsets.append(expected_count)
+        expected_count += len(expected_page)
+    if expected_count != actual_count:
+        mismatched_offsets.append(expected_count)
+    return not mismatched_offsets, actual_count, mismatched_offsets
 
 
 def _verify_forward(
@@ -142,16 +165,15 @@ def verify_model(
     errors = []
     for query in model.list_queries():
         if query["kind"] in {"fixed", "count"}:
-            actual = model.lookup(query["id"])
-            expected = _live_rows(con, query)
-            passed = _canonical_rows(actual) == _canonical_rows(expected)
+            passed, row_count, mismatches = _compare_paged(model, con, query)
             query_results.append(
                 {
                     "id": query["id"],
                     "kind": query["kind"],
                     "sample_keys": "all",
                     "passed": passed,
-                    "rows_compiled": len(actual),
+                    "rows_compiled": row_count,
+                    "mismatched_offsets": mismatches,
                 }
             )
             if not passed:
@@ -163,10 +185,16 @@ def verify_model(
         mismatched = []
         for position in positions:
             key = keys[position]
-            actual = model.lookup(query["id"], key)
-            expected = _live_rows(con, query, key)
-            if _canonical_rows(actual) != _canonical_rows(expected):
-                mismatched.append({"position": position, "key": key})
+            passed, row_count, offsets = _compare_paged(model, con, query, key)
+            if not passed:
+                mismatched.append(
+                    {
+                        "position": position,
+                        "key": key,
+                        "rows_compiled": row_count,
+                        "mismatched_offsets": offsets,
+                    }
+                )
         passed = not mismatched
         query_results.append(
             {
