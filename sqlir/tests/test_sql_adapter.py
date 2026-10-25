@@ -10,6 +10,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from collections import Counter
 from pathlib import Path
 
 import numpy as np
@@ -23,6 +24,19 @@ from sqlir.model_adapter import ModelAdapter
 
 
 RUBIK_MODULE = os.environ.get("SQLIR_RUBIK_MODULE")
+
+
+class CountingWeights:
+    def __init__(self, source):
+        self.source = source
+        self.calls = []
+
+    def get(self, name: str) -> np.ndarray:
+        self.calls.append(name)
+        return self.source.get(name)
+
+    def describe(self) -> dict:
+        return self.source.describe()
 
 
 class SQLAdapterTests(unittest.TestCase):
@@ -118,6 +132,28 @@ class SQLAdapterTests(unittest.TestCase):
         )
         self.assertEqual(self.adapter.read_attention_weights(0).shape, (len(tokens), len(tokens)))
 
+    def test_scan_does_not_mutate_forward_state_or_consume_pending_logits(self) -> None:
+        adapter = SQLAdapter(
+            str(self.model_dir), weights=DirectWeights(self.model), seed=11
+        )
+        tokens = adapter.tokenize("earth sun")
+        baseline, _ = adapter.forward(tokens)
+        attention = adapter.read_attention_weights(0)
+
+        adapter.scan("moon earth")
+        np.testing.assert_array_equal(adapter.read_logits(), baseline)
+        np.testing.assert_array_equal(adapter.read_attention_weights(0), attention)
+
+        modification = np.zeros(adapter.get_vocab_size(), dtype=np.float64)
+        chosen = int(np.flatnonzero(np.isfinite(baseline))[0])
+        modification[chosen] = 123.0
+        adapter.modify_logits(modification)
+        adapter.scan("earth sun")
+        modified, _ = adapter.forward(tokens)
+        expected = baseline.copy()
+        expected[chosen] += modification[chosen]
+        np.testing.assert_array_equal(modified, expected)
+
     def test_scan_reports_compiled_evidence_and_attestation(self) -> None:
         scan = self.adapter.scan("earth sun nonesuch")
         earth = next(item for item in scan["words"] if item["word"] == "earth")
@@ -208,6 +244,26 @@ class SQLAdapterTests(unittest.TestCase):
         expected = self.model.forward("Earth")
         actual = self.model.forward("Earth", weights=DirectWeights(self.model))
         self.assertEqual(actual, expected)
+
+    def test_adapter_fetches_each_channel_once_per_forward(self) -> None:
+        source = CountingWeights(DirectWeights(self.model))
+        adapter = SQLAdapter(str(self.model_dir), weights=source)
+        tokens = adapter.tokenize("earth sun moon")
+        expected = Counter(
+            [
+                "channel:E",
+                "channel:B:Q",
+                "channel:B:K",
+                "channel:B:V",
+                "channel:B:O",
+                "channel:B:F1",
+                "channel:B:F2",
+            ]
+        )
+        for _ in range(2):
+            source.calls.clear()
+            adapter.forward(tokens)
+            self.assertEqual(Counter(source.calls), expected)
 
     def test_missing_rubik_module_has_clear_error(self) -> None:
         with self.assertRaisesRegex(RuntimeError, "Could not import Rubik module"):

@@ -192,13 +192,43 @@ class SQLAdapter(ModelAdapter):
         indptr = self.model._segment_array(self.lm["segments"][group]["indptr"])
         return int(indptr[token_id + 1]) - int(indptr[token_id])
 
-    def _embedding(self, token_id: int) -> np.ndarray:
+    def _embedding(self, token_id: int, E: np.ndarray | None = None) -> np.ndarray:
         word = self._word_for_id(token_id)
         if token_id < 3:
             return np.zeros(437, dtype=np.float64)
-        E = self._channel("channel:E")
+        if E is None:
+            E = self._channel("channel:E")
         vectors = [E[ord(char) - 32] for char in word if 32 <= ord(char) <= 126]
         return np.mean(vectors, axis=0) if vectors else np.zeros(437, dtype=np.float64)
+
+    @staticmethod
+    def _attention_projection(
+        X: np.ndarray,
+        query_weights: np.ndarray,
+        key_weights: np.ndarray,
+        key_override: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        Z1 = norm(X)
+        Q = Z1 @ query_weights
+        K = (
+            Z1 @ key_weights
+            if key_override is None
+            else np.asarray(key_override, dtype=np.float64)
+        )
+        A = softmax_causal((Q @ K.T) / np.sqrt(437))
+        return Z1, Q, K, A
+
+    def _focus_attention(self, token_ids: list[int]) -> np.ndarray:
+        E = self._channel("channel:E")
+        X = np.stack([self._embedding(token, E) for token in token_ids]).astype(
+            np.float64
+        )
+        _, _, _, attention = self._attention_projection(
+            X,
+            self._channel("channel:B:Q"),
+            self._channel("channel:B:K"),
+        )
+        return attention
 
     @staticmethod
     def _apply_hook(callback, state):
@@ -215,7 +245,10 @@ class SQLAdapter(ModelAdapter):
         if not tokens:
             raise ValueError("tokens must not be empty")
         token_ids = [int(token) for token in tokens]
-        X = np.stack([self._embedding(token) for token in token_ids]).astype(np.float64)
+        E = self._channel("channel:E")
+        X = np.stack([self._embedding(token, E) for token in token_ids]).astype(
+            np.float64
+        )
         pending = self._residual.pop(0, None)
         if pending is not None:
             pending = np.asarray(pending, dtype=np.float64)
@@ -223,17 +256,22 @@ class SQLAdapter(ModelAdapter):
         hook = getattr(self, "_active_hooks", {}).get(0)
         if hook is not None:
             X = self._apply_hook(hook, X)
-        Z1 = norm(X)
-        Q = Z1 @ self._channel("channel:B:Q")
-        K = Z1 @ self._channel("channel:B:K")
-        V = Z1 @ self._channel("channel:B:V")
         layer_zero_writes = self._pending_layer_states.pop(0, {})
         override = self._pending_kv
         self._pending_kv = None
+        Z1, Q, K, A = self._attention_projection(
+            X,
+            self._channel("channel:B:Q"),
+            self._channel("channel:B:K"),
+            (
+                override[0]["key"]
+                if override is not None and 0 in override
+                else None
+            ),
+        )
+        V = Z1 @ self._channel("channel:B:V")
         if override is not None and 0 in override:
-            K = np.asarray(override[0]["key"], dtype=np.float64)
             V = np.asarray(override[0]["value"], dtype=np.float64)
-        A = softmax_causal((Q @ K.T) / np.sqrt(437))
         if "attention" in layer_zero_writes:
             A = np.asarray(layer_zero_writes["attention"], dtype=np.float64)
             if A.shape != (len(token_ids), len(token_ids)):
@@ -586,8 +624,8 @@ class SQLAdapter(ModelAdapter):
             })
         focus = None
         if tokens:
-            self.forward(tokens)
-            focus = self._word_for_id(tokens[int(np.argmax(self._attention[-1]))])
+            attention = self._focus_attention(tokens)
+            focus = self._word_for_id(tokens[int(np.argmax(attention[-1]))])
         return {
             "words": entries,
             "pairs": pairs,
