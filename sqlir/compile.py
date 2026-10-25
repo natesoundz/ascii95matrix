@@ -425,7 +425,13 @@ def _write_operator_segments(
     return counts
 
 
-def compile_model(db: Path, workbook: Path, output: Path, only_channels: bool = False) -> dict:
+def compile_model(
+    db: Path,
+    workbook: Path,
+    output: Path,
+    only_channels: bool = False,
+    define_source: str | None = None,
+) -> dict:
     started = time.perf_counter()
     db = db.resolve()
     workbook = workbook.resolve()
@@ -494,6 +500,13 @@ def compile_model(db: Path, workbook: Path, output: Path, only_channels: bool = 
                 )
 
         channel_counts = _write_operator_segments(con, workbook, store)
+        lm_manifest = {}
+        if not only_channels:
+            from .lm_compile import compile_lm
+
+            lm_manifest = compile_lm(
+                con, workbook, store, spool, define_source=define_source
+            )
         spool.close()
         con.close()
 
@@ -518,7 +531,7 @@ def compile_model(db: Path, workbook: Path, output: Path, only_channels: bool = 
                 }
 
         manifest = {
-            "format_version": 2,
+            "format_version": 3,
             "created_utc": datetime.now(timezone.utc).isoformat(),
             "db_path": str(db),
             "db_sha256": db_hash,
@@ -533,6 +546,7 @@ def compile_model(db: Path, workbook: Path, output: Path, only_channels: bool = 
             "schemas": schemas,
             "queries": query_manifest,
             "segments": segments,
+            "lm": lm_manifest,
         }
         manifest_path = output / "manifest.json"
         manifest_path.write_text(
@@ -552,8 +566,15 @@ def main() -> None:
     parser.add_argument("--workbook", required=True, type=Path)
     parser.add_argument("--out", required=True, type=Path)
     parser.add_argument("--only-channels", action="store_true")
+    parser.add_argument("--define-source")
     args = parser.parse_args()
-    compile_model(args.db, args.workbook, args.out, args.only_channels)
+    compile_model(
+        args.db,
+        args.workbook,
+        args.out,
+        args.only_channels,
+        define_source=args.define_source,
+    )
 
 
 if __name__ == "__main__":

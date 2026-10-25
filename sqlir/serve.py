@@ -10,15 +10,36 @@ from pathlib import Path
 from typing import Any
 
 from .runtime import CompiledModel
+from .sql_adapter import SQLAdapter
+from .weights import DirectWeights, RubikWeights
 
 
-def dispatch(model: CompiledModel, request: dict) -> dict:
+def dispatch(model: CompiledModel, request: dict, state: dict | None = None) -> dict:
     request_id = request.get("id")
+    state = state if state is not None else {}
     try:
         operation = request["op"]
         args = request.get("args") or {}
+        weights = state.get("weights")
+        if weights is None:
+            weights = DirectWeights(model)
+            state["weights"] = weights
         if operation == "forward":
-            result = model.forward(args["text"])
+            result = model.forward(args["text"], weights=weights)
+        elif operation in {"generate", "scan"}:
+            adapter = state.get("adapter")
+            if adapter is None:
+                adapter = SQLAdapter(str(model.directory), weights=weights)
+                adapter.load()
+                state["adapter"] = adapter
+            if operation == "generate":
+                result = adapter.run(
+                    args["prompt"],
+                    max_tokens=args.get("max_tokens", 40),
+                    temperature=args.get("temperature", 0.0),
+                )
+            else:
+                result = adapter.scan(args["text"])
         elif operation == "lookup":
             result = model.lookup(
                 args["query_id"],
@@ -33,7 +54,8 @@ def dispatch(model: CompiledModel, request: dict) -> dict:
         elif operation == "list_queries":
             result = model.list_queries()
         elif operation == "manifest":
-            result = model.manifest
+            result = dict(model.manifest)
+            result["active_weights"] = weights.describe()
         else:
             raise ValueError(f"Unknown operation: {operation}")
         return {"id": request_id, "ok": True, "result": result}
@@ -41,13 +63,13 @@ def dispatch(model: CompiledModel, request: dict) -> dict:
         return {"id": request_id, "ok": False, "error": str(exc)}
 
 
-def run_json_lines(model: CompiledModel) -> None:
+def run_json_lines(model: CompiledModel, state: dict | None = None) -> None:
     for line in sys.stdin:
         if not line.strip():
             continue
         try:
             request = json.loads(line)
-            response = dispatch(model, request)
+            response = dispatch(model, request, state)
         except Exception as exc:
             response = {"id": None, "ok": False, "error": str(exc)}
         sys.stdout.write(json.dumps(response, ensure_ascii=False, separators=(",", ":")))
@@ -55,7 +77,7 @@ def run_json_lines(model: CompiledModel) -> None:
         sys.stdout.flush()
 
 
-def run_http(model: CompiledModel, port: int) -> None:
+def run_http(model: CompiledModel, port: int, state: dict | None = None) -> None:
     class Handler(BaseHTTPRequestHandler):
         def do_POST(self) -> None:
             if self.path != "/call":
@@ -64,7 +86,7 @@ def run_http(model: CompiledModel, port: int) -> None:
             try:
                 length = int(self.headers.get("Content-Length", "0"))
                 request = json.loads(self.rfile.read(length))
-                response = dispatch(model, request)
+                response = dispatch(model, request, state)
             except Exception as exc:
                 response = {"id": None, "ok": False, "error": str(exc)}
             payload = json.dumps(
@@ -92,12 +114,22 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, type=Path)
     parser.add_argument("--http", type=int)
+    parser.add_argument("--weights", choices=("direct", "rubik"), default="direct")
+    parser.add_argument("--rubik-store", type=Path)
+    parser.add_argument("--rubik-module", type=Path)
     args = parser.parse_args()
     model = CompiledModel(args.model)
-    if args.http is None:
-        run_json_lines(model)
+    if args.weights == "rubik":
+        if args.rubik_store is None or args.rubik_module is None:
+            parser.error("rubik mode requires --rubik-store and --rubik-module")
+        weights = RubikWeights(args.rubik_store, args.rubik_module)
     else:
-        run_http(model, args.http)
+        weights = DirectWeights(model)
+    state = {"weights": weights, "adapter": None}
+    if args.http is None:
+        run_json_lines(model, state)
+    else:
+        run_http(model, args.http, state)
 
 
 if __name__ == "__main__":

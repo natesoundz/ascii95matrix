@@ -1,0 +1,9 @@
+{"id":"forward_Earth","op":"forward","args":{"text":"Earth"}}
+{"id":"count_F1","op":"count","args":{"query_id":"fixed:conical.F1"}}
+{"id":"lookup_lemma_earth","op":"lookup","args":{"query_id":"text:lexeme.lemma","key":"earth","offset":0,"limit":20}}
+{"id":"lookup_normalized_earth","op":"lookup","args":{"query_id":"text:lexeme.normalized","key":"earth","offset":0,"limit":20}}
+{"id":"generate_define_earth","op":"generate","args":{"prompt":"define earth","max_tokens":40,"temperature":0.0}}
+{"id":"generate_related_earth","op":"generate","args":{"prompt":"related to earth","max_tokens":40,"temperature":0.0}}
+{"id":"generate_the_earth","op":"generate","args":{"prompt":"the earth","max_tokens":40,"temperature":0.0}}
+{"id":"scan_earth_sentence","op":"scan","args":{"text":"the earth is round"}}
+{"id":"list_queries","op":"list_queries","args":{}}

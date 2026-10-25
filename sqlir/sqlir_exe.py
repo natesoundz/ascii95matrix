@@ -7,8 +7,14 @@ from pathlib import Path
 
 
 def main() -> None:
-    if len(sys.argv) < 2 or sys.argv[1] not in {"serve", "verify", "compile"}:
-        raise SystemExit("Usage: conical serve|verify|compile ...")
+    if len(sys.argv) < 2 or sys.argv[1] not in {
+        "serve",
+        "verify",
+        "compile",
+        "chat",
+        "weights",
+    }:
+        raise SystemExit("Usage: conical serve|verify|compile|chat|weights ...")
     command = sys.argv.pop(1)
     root = Path(__file__).resolve().parent.parent
     if str(root) not in sys.path:
@@ -17,8 +23,12 @@ def main() -> None:
         from sqlir.serve import main as run
     elif command == "verify":
         from sqlir.verify import main as run
-    else:
+    elif command == "compile":
         from sqlir.compile import main as run
+    elif command == "chat":
+        from sqlir.chat import main as run
+    else:
+        from sqlir.weights import main as run
     run()
 
 

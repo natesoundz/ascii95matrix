@@ -5,12 +5,15 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 from .catalog import canonical_key
 from .conical_sql_ir_transformer import norm, relu, softmax_causal
+
+if TYPE_CHECKING:
+    from .weights import WeightSource
 
 
 DISCLOSURES = [
@@ -31,7 +34,7 @@ class CompiledModel:
         self.manifest = json.loads(
             (self.directory / "manifest.json").read_text(encoding="utf-8")
         )
-        if self.manifest.get("format_version") != 2:
+        if self.manifest.get("format_version") != 3:
             raise ValueError(
                 f"Unsupported model format version: {self.manifest.get('format_version')}"
             )
@@ -210,18 +213,24 @@ class CompiledModel:
         end = int(offsets[position + 1]) if position + 1 < len(offsets) else len(raw)
         return json.loads(bytes(raw[start:end]).decode("utf-8"))
 
-    def forward(self, text: str) -> dict:
+    def forward(
+        self, text: str, weights: WeightSource | None = None
+    ) -> dict:
         if any(ord(character) < 32 or ord(character) > 126 for character in text):
             raise ValueError("Only ASCII 32..126 is supported by the workbook.")
         if not text:
             raise ValueError("Nonempty input required")
 
-        E = self._segment_array("channel:E")
+        if weights is None:
+            from .weights import DirectWeights
+
+            weights = DirectWeights(self)
+        E = weights.get("channel:E")
         X = E[np.array([ord(character) - 32 for character in text])]
         Z1 = norm(X)
 
         def project(value: np.ndarray, name: str) -> np.ndarray:
-            return value @ self._segment_array(f"channel:B:{name}")
+            return value @ weights.get(f"channel:B:{name}")
 
         Q = project(Z1, "Q")
         K = project(Z1, "K")
@@ -241,7 +250,7 @@ class CompiledModel:
             chr(32 + int(index)) for index in distance.argmin(axis=1)
         )
         operators = {
-            name: self._segment_array(f"channel:B:{name}")
+            name: weights.get(f"channel:B:{name}")
             for name in self.manifest["compiled_rows"]
         }
         return {

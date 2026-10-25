@@ -8,20 +8,49 @@ Compile the user's read-only SQLite database once:
 python -m sqlir.compile --db PATH --workbook sqlir/conical437_real_workbook.json --out MODEL_DIR
 python -m sqlir.verify --model MODEL_DIR --db PATH --text Earth
 python -m sqlir.serve --model MODEL_DIR
+python -m sqlir.chat --model MODEL_DIR
 ```
 
 The server accepts JSON-lines requests on stdin/stdout by default. Use
 `python -m sqlir.serve --model MODEL_DIR --http PORT` for a local HTTP endpoint
 bound to `127.0.0.1`. For a fast channel-only compile, add `--only-channels`.
 Lookup requests accept `offset` and `limit` for pagination; use the `count` operation to get a result count without decoding rows.
-`sqlir_exe.py` dispatches `serve`, `verify`, and `compile` for the optional
-PyInstaller executable; the artifact directory remains external to the exe.
+The `generate` and `scan` operations use compiled LM segments only. Use
+`python -m sqlir.serve --model MODEL_DIR --weights direct` (the default), or
+select `--weights rubik --rubik-store DIR --rubik-module PATH` to read channel
+weights from an exported Rubik store. Export that store with
+`python -m sqlir.weights export --model MODEL_DIR --out DIR --rubik-module PATH`.
+The chat REPL accepts the same weight-source flags.
+The Rubik backend changes how compiled channel arrays are addressed and read;
+it does not change the computation. `sqlir_exe.py` dispatches `serve`, `verify`,
+`compile`, `chat`, and `weights` for the optional PyInstaller executable; the
+artifact directory remains external to the exe.
+
+## Adapter
+
+`SQLAdapter` implements the supplied `ModelAdapter` interface with deterministic
+count-based next-word readout over compiled occurrence, collocation, definition,
+and relation segments. Its automatic scan runs on every prompt and reports
+vocabulary, POS, inflection, definition, relation, transition, and workbook
+evidence. Scan caps limit presentation only; they do not change compiled data.
+The direct weight source is the default. Rubik mode requires the user's
+`rubik_store` module and its `core_cube` dependency; those files are not vendored.
+Neither mode uses Ollama or an LLM.
+
+The adapter's readout coefficients are fixed (`bigram=1.0`, `colloc=0.5`,
+`unigram=0.05`). It emits only attested bigram or collocation transitions,
+is not a trained LLM, and does not reason. Unknown words use the explicit
+`<unk>` token and cannot produce transitions.
 
 ## Files
 
 - `catalog.py` introspects SQLite schemas and creates the query catalog.
 - `compile.py` creates the aligned `blob.bin` and its `manifest.json`.
 - `runtime.py` memory-maps the artifact and implements lookup and forward calls.
+- `lm_compile.py` compiles vocabulary, counts, definitions, relations, and scan
+  indexes; `sql_adapter.py` and `weights.py` provide the adapter and weight modes.
+- `chat.py` provides the adapter REPL; `windows/` contains the Windows runner
+  and sample requests.
 - `verify.py` compares compiled lookups and forward results against live inputs.
 - `serve.py` provides JSON-lines and HTTP request interfaces.
 - `conical_sql_ir_transformer.py` and `conical437_real_workbook.json` are the
