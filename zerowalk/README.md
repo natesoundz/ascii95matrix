@@ -109,25 +109,40 @@ python -m zerowalk fit --workbook sqlir/conical437_real_workbook.json \
   --strategy joint --workers 8
 ```
 
+`--strategy blocks` greedily colors features by overlapping nonzero row
+supports; each color's disjoint line walks are evaluated together.
+Its stats report the number of colors and maximum color size; blocks use one
+process and reject `--workers > 1`.
+The Webster runs used 31, 61 and 91 colors for K=1, 2 and 3, respectively,
+with a maximum color size of 12 in each run.
+
 Webster fit comparison (top-1 percentages; coordinate values are from the
 committed reports; `nproc` was 8):
 
-| K | Strategy | Train / test top-1 | Sweeps | Fit seconds | Fallbacks |
-|---:|---|---:|---:|---:|---:|
-| 1 | coordinate | 17.2587 / 17.4269 | 7 | 4.125 | 0 |
-| 1 | joint, workers=1 | 15.2753 / 15.1554 | 7 | 14.309 | 0 |
-| 1 | joint, workers=8 | 15.2753 / 15.1554 | 7 | 2.777 | 0 |
-| 2 | coordinate | 19.3618 / 19.6708 | 7 | 20.263 | 0 |
-| 2 | joint, workers=1 | 17.9718 / 18.4393 | 8 | 67.593 | 0 |
-| 2 | joint, workers=8 | 17.9718 / 18.4393 | 8 | 10.661 | 0 |
-| 3 | coordinate | 20.5159 / 20.7719 | 15 | 372.829 | 0 |
-| 3 | joint, workers=1 | not run after K=3 cutoff | — | — | — |
-| 3 | joint, workers=8 | not completed (45-minute cutoff; proposal phase reached sweep 13) | — | — | — |
+| K | Strategy | Train / test top-1 | Sweeps | Fit seconds | Mean comparisons / sweep | Fallbacks |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | coordinate | 17.2587 / 17.4269 | 7 | 4.125 | 22,880.0 | 0 |
+| 1 | joint, workers=1 | 15.2753 / 15.1554 | 7 | 14.309 | 78,876.4 | 0 |
+| 1 | joint, workers=8 | 15.2753 / 15.1554 | 7 | 2.777 | 78,876.4 | 0 |
+| 1 | blocks | 17.2587 / 17.4269 | 7 | 4.449 | 22,879.6 | — |
+| 2 | coordinate | 19.3618 / 19.6708 | 7 | 20.263 | 47,216.4 | 0 |
+| 2 | joint, workers=1 | 17.9718 / 18.4393 | 8 | 67.593 | 162,742.3 | 0 |
+| 2 | joint, workers=8 | 17.9718 / 18.4393 | 8 | 10.661 | 162,742.3 | 0 |
+| 2 | blocks | 19.3618 / 19.6708 | 7 | 30.886 | 47,286.9 | — |
+| 3 | coordinate | 20.5159 / 20.7719 | 15 | 372.829 | 62,728.6 | 0 |
+| 3 | joint, workers=1 | not run after K=3 cutoff | — | — | — | — |
+| 3 | joint, workers=8 | not completed (45-minute cutoff; proposal phase reached sweep 13) | — | — | — | — |
+| 3 | blocks | 20.5159 / 20.7719 | 15 | 216.861 | 62,637.4 | — |
 
 The K=1/K=2 joint test accuracy is about 1.2–2.3 percentage points below
 coordinate fit, despite faster workers=8 fits; the one-worker joint fits were
 slower than coordinate. K=3 did not produce a complete joint report within
 the time limit, so only the completed workers=8 K=1/K=2 reports are committed.
+Blocks matched coordinate train/test accuracy for all three K values, but were
+slower for K=1 and K=2 and faster for K=3. On the README fixture, hinge block
+offsets matched the independent coordinate proposals exactly (0/380 at zero W
+and after one coordinate sweep); softmax had 15/380 and 22/380 offset
+mismatches, respectively, from floating-point summation.
 
 ## Discovering occurrence-bound distinctions
 

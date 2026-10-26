@@ -8,7 +8,7 @@ import time
 import numpy as np
 
 from .data import AggregatedRows
-from .walk import line_argmin
+from .walk import line_argmin, line_argmin_many
 
 
 N_CLASSES = 95
@@ -91,6 +91,30 @@ def _off_label_top_two(
         )
         second_score[new_second] = candidate_scores[new_second, rank]
     return first_index, first_score, second_score
+
+
+def _color_features(X: np.ndarray) -> list[np.ndarray]:
+    binary = (X != 0).astype(np.float64)
+    conflicts = binary.T @ binary > 0
+    np.fill_diagonal(conflicts, False)
+    assigned = np.full(X.shape[1], -1, dtype=np.int64)
+    groups: list[list[int]] = []
+    for feature_index in range(X.shape[1]):
+        previous = assigned[:feature_index][
+            conflicts[feature_index, :feature_index]
+        ]
+        forbidden = set(int(color) for color in previous)
+        color = 0
+        while color in forbidden:
+            color += 1
+        assigned[feature_index] = color
+        while len(groups) <= color:
+            groups.append([])
+        groups[color].append(feature_index)
+    return [
+        np.asarray(group, dtype=np.int64)
+        for group in groups
+    ]
 
 
 def _class_coordinate_proposals(
@@ -201,6 +225,195 @@ def _class_coordinate_proposals(
     return proposals, coordinates_walked, coordinates_moved, comparisons, changed
 
 
+def _class_block_proposals(
+    X: np.ndarray,
+    y: np.ndarray,
+    counts: np.ndarray,
+    scores: np.ndarray,
+    class_index: int,
+    loss: str,
+    unit_bits: int,
+    max_k: int,
+    color_groups: list[np.ndarray],
+    W: np.ndarray | None = None,
+) -> tuple[np.ndarray, int, int, int, bool]:
+    target_score = scores[np.arange(y.size), y]
+    if loss == "hinge":
+        off_index, off_score_one, off_score_two = _off_label_top_two(
+            scores, y
+        )
+        other_off_score = np.where(
+            off_index == class_index, off_score_two, off_score_one
+        )
+        target_other = off_score_one
+        is_target_all = y == class_index
+    else:
+        unit = 2.0 ** -unit_bits
+        lse_other = _other_logsumexp(scores, class_index, unit)
+        target_logit_all = target_score.astype(np.float64) * unit
+        counts_float_all = counts.astype(np.float64)
+        is_target_all = y == class_index
+
+    proposals = np.zeros(X.shape[1], dtype=np.int64)
+    coordinates_walked = 0
+    coordinates_moved = 0
+    comparisons = 0
+    changed = False
+
+    for group in color_groups:
+        coordinates_walked += group.size
+        group_values = X[:, group]
+        active_rows, group_slots = np.nonzero(group_values)
+        if not active_rows.size:
+            continue
+        active_slots = np.unique(group_slots)
+        segments = group_slots.astype(np.int64, copy=False)
+        x = group_values[active_rows, group_slots]
+        count = counts[active_rows]
+        score_c = scores[active_rows, class_index]
+        score_y = target_score[active_rows]
+        is_target = is_target_all[active_rows]
+
+        if loss == "hinge":
+            other_score = other_off_score[active_rows]
+            target_off_score = target_other[active_rows]
+
+            def hinge_terms(updated: np.ndarray) -> np.ndarray:
+                hinges = np.empty(active_rows.size, dtype=np.int64)
+                not_target = ~is_target
+                if np.any(not_target):
+                    competitor = np.maximum(
+                        updated[not_target],
+                        other_score[not_target],
+                    )
+                    hinges[not_target] = np.maximum(
+                        0,
+                        1 + competitor - score_y[not_target],
+                    )
+                if np.any(is_target):
+                    hinges[is_target] = np.maximum(
+                        0,
+                        1 + target_off_score[is_target] - updated[is_target],
+                    )
+                return hinges
+
+            baseline_terms = hinge_terms(score_c)
+            baseline_by_slot = np.zeros(group.size, dtype=np.int64)
+            np.add.at(
+                baseline_by_slot,
+                segments,
+                count * baseline_terms,
+            )
+        else:
+            other_lse = lse_other[active_rows]
+            target_logit = target_logit_all[active_rows]
+            counts_float = counts_float_all[active_rows]
+            baseline_logits = score_c.astype(np.float64) * unit
+            baseline_terms = (
+                np.logaddexp(other_lse, baseline_logits) - target_logit
+            )
+            baseline_by_slot = np.bincount(
+                segments,
+                weights=counts_float * baseline_terms,
+                minlength=group.size,
+            )
+
+        def L_many(lines: np.ndarray, steps: np.ndarray) -> np.ndarray:
+            requested_slots = active_slots[lines]
+            requested = np.zeros(group.size, dtype=bool)
+            requested[requested_slots] = True
+            selected = requested[segments]
+            selected_slots = segments[selected]
+            step_by_slot = np.zeros(group.size, dtype=np.int64)
+            step_by_slot[requested_slots] = steps
+            displacement = step_by_slot[selected_slots] * x[selected]
+            updated = score_c[selected] + displacement
+
+            if loss == "hinge":
+                terms = hinge_terms_for_selected(
+                    updated,
+                    selected,
+                    is_target,
+                    other_score,
+                    target_off_score,
+                    score_y,
+                )
+                totals = np.zeros(group.size, dtype=np.int64)
+                np.add.at(
+                    totals,
+                    selected_slots,
+                    count[selected] * terms,
+                )
+            else:
+                updated_logits = updated.astype(np.float64) * unit
+                terms = (
+                    np.logaddexp(other_lse[selected], updated_logits)
+                    - target_logit[selected]
+                )
+                terms = terms - np.where(
+                    is_target[selected],
+                    displacement.astype(np.float64) * unit,
+                    0.0,
+                )
+                totals = np.bincount(
+                    selected_slots,
+                    weights=counts_float[selected] * terms,
+                    minlength=group.size,
+                )
+            return totals[requested_slots] - baseline_by_slot[requested_slots]
+
+        if loss == "hinge":
+            def hinge_terms_for_selected(
+                updated: np.ndarray,
+                selected: np.ndarray,
+                selected_is_target: np.ndarray,
+                selected_other_score: np.ndarray,
+                selected_target_other: np.ndarray,
+                selected_score_y: np.ndarray,
+            ) -> np.ndarray:
+                is_target_selected = selected_is_target[selected]
+                other_score_selected = selected_other_score[selected]
+                target_other_selected = selected_target_other[selected]
+                score_y_selected = selected_score_y[selected]
+                hinges = np.empty(updated.size, dtype=np.int64)
+                not_target = ~is_target_selected
+                if np.any(not_target):
+                    competitor = np.maximum(
+                        updated[not_target],
+                        other_score_selected[not_target],
+                    )
+                    hinges[not_target] = np.maximum(
+                        0,
+                        1 + competitor - score_y_selected[not_target],
+                    )
+                if np.any(is_target_selected):
+                    hinges[is_target_selected] = np.maximum(
+                        0,
+                        1
+                        + target_other_selected[is_target_selected]
+                        - updated[is_target_selected],
+                    )
+                return hinges
+
+        active_offsets, used = line_argmin_many(
+            L_many,
+            active_slots.size,
+            max_k=max_k,
+        )
+        block_offsets = np.zeros(group.size, dtype=np.int64)
+        block_offsets[active_slots] = active_offsets
+        proposals[group] = block_offsets
+        comparisons += used
+        moved = int(np.count_nonzero(block_offsets))
+        if W is not None and moved:
+            W[class_index, group] += block_offsets
+            scores[:, class_index] += group_values @ block_offsets
+            coordinates_moved += moved
+            changed = True
+
+    return proposals, coordinates_walked, coordinates_moved, comparisons, changed
+
+
 _WORKER_X = None
 _WORKER_Y = None
 _WORKER_COUNTS = None
@@ -304,14 +517,17 @@ def fit_readout(
         raise ValueError("stop_acc must be in [0, 1]")
     if patience < 1:
         raise ValueError("patience must be positive")
-    if strategy not in {"coordinate", "joint"}:
-        raise ValueError("strategy must be 'coordinate' or 'joint'")
+    if strategy not in {"coordinate", "joint", "blocks"}:
+        raise ValueError("strategy must be 'coordinate', 'joint', or 'blocks'")
     if workers < 1:
         raise ValueError("workers must be positive")
+    if strategy == "blocks" and workers > 1:
+        raise ValueError("blocks strategy uses vectorized parallelism; workers must be 1")
     X = rows.X
     y = rows.y
     counts = rows.counts
     started = time.monotonic()
+    color_groups = _color_features(X) if strategy == "blocks" else None
     W = np.zeros((N_CLASSES, X.shape[1]), dtype=np.int64)
     scores = X @ W.T
     objective = _objective(scores, y, counts, loss, unit_bits)
@@ -350,6 +566,41 @@ def fit_readout(
                             loss,
                             unit_bits,
                             max_k,
+                            W,
+                        )
+                    )
+                    coordinates_walked += walked
+                    coordinates_moved += moved
+                    comparisons += used
+                    changed |= class_changed
+                    classes_done += 1
+                    if progress and (
+                        classes_done == total_classes or class_index % 5 == 4
+                    ):
+                        elapsed = time.monotonic() - started
+                        rate = classes_done / elapsed if elapsed else 0
+                        remaining = (
+                            (total_classes - classes_done) / rate if rate else 0
+                        )
+                        sys.stderr.write(
+                            f"\rzerowalk fit: sweep {sweep + 1}/{max_sweeps}, "
+                            f"class {class_index + 1}/95, elapsed {elapsed:.1f}s, "
+                            f"ETA {remaining:.1f}s"
+                        )
+                        sys.stderr.flush()
+            elif strategy == "blocks":
+                for class_index in range(N_CLASSES):
+                    _, walked, moved, used, class_changed = (
+                        _class_block_proposals(
+                            X,
+                            y,
+                            counts,
+                            scores,
+                            class_index,
+                            loss,
+                            unit_bits,
+                            max_k,
+                            color_groups,
                             W,
                         )
                     )
@@ -579,6 +830,12 @@ def fit_readout(
         "workers": workers,
         "joint_steps": joint_steps,
     }
+    if color_groups is not None:
+        stats["colors"] = len(color_groups)
+        stats["max_color_size"] = max(
+            (int(group.size) for group in color_groups),
+            default=0,
+        )
     return W, stats
 
 

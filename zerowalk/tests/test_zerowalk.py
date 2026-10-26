@@ -18,12 +18,20 @@ from zerowalk.data import AggregatedRows, prepare_data
 from zerowalk.discover import build_merge_trees, prepare_discovery_data
 from zerowalk.__main__ import _write_model, build_parser
 from zerowalk.readout import (
+    _class_block_proposals,
+    _class_coordinate_proposals,
+    _color_features,
     fit_readout,
     scores_for,
     top1_accuracy,
     weighted_loss,
 )
-from zerowalk.walk import line_argmin, walk_edge, walk_known
+from zerowalk.walk import (
+    line_argmin,
+    line_argmin_many,
+    walk_edge,
+    walk_known,
+)
 from zerowalk.workbook import load_workbook
 from zerowalk import zero_walk
 
@@ -119,6 +127,52 @@ class WalkTests(unittest.TestCase):
 
         self.assertEqual(line_argmin(counted_objective)[0], 4)
         self.assertTrue(all(count == 1 for count in calls.values()))
+
+    def test_line_argmin_many_matches_combined_selftest_grid(self):
+        centers = []
+        weights = []
+        flatnesses = []
+        for center in range(-150, 151, 7):
+            for weight in (1, 3):
+                for flatness in (0, 2):
+                    centers.append(center)
+                    weights.append(weight)
+                    flatnesses.append(flatness)
+        centers = np.asarray(centers, dtype=np.int64)
+        weights = np.asarray(weights, dtype=np.int64)
+        flatnesses = np.asarray(flatnesses, dtype=np.int64)
+
+        def L_many(lines, steps):
+            return weights[lines] * np.maximum(
+                0,
+                np.abs(steps - centers[lines]) - flatnesses[lines],
+            )
+
+        offsets, comparisons = line_argmin_many(
+            L_many,
+            centers.size,
+        )
+        expected = []
+        expected_comparisons = 0
+        for center, weight, flatness in zip(
+            centers,
+            weights,
+            flatnesses,
+        ):
+            def objective(t, center=center, weight=weight, flatness=flatness):
+                return int(weight) * max(
+                    0,
+                    abs(t - int(center)) - int(flatness),
+                )
+
+            offset, used = line_argmin(objective)
+            expected.append(offset)
+            expected_comparisons += used
+        self.assertTrue(np.array_equal(
+            offsets,
+            np.asarray(expected, dtype=np.int64),
+        ))
+        self.assertEqual(comparisons, expected_comparisons)
 
 
 class WorkbookAndReadoutTests(unittest.TestCase):
@@ -517,6 +571,129 @@ class CombinedScriptTests(unittest.TestCase):
         ])
         self.assertEqual(parsed.strategy, "joint")
         self.assertEqual(parsed.workers, 2)
+
+    def test_blocks_coloring_and_class_proposal_parity(self):
+        color_groups = _color_features(self.rows.X)
+        supports = self.rows.X != 0
+        for group in color_groups:
+            self.assertTrue(np.all(
+                supports[:, group].sum(axis=1) <= 1
+            ))
+        self.assertEqual(
+            [group.tolist() for group in color_groups],
+            [group.tolist() for group in _color_features(self.rows.X)],
+        )
+
+        coordinate_weights, _ = fit_readout(
+            self.rows,
+            max_sweeps=1,
+            progress=False,
+            strategy="coordinate",
+        )
+        score_states = (
+            ("zero-W", np.zeros((self.rows.y.size, 95), dtype=np.int64)),
+            ("one-coordinate-sweep", self.rows.X @ coordinate_weights.T),
+        )
+        mismatch_counts = {
+            (state, loss): 0
+            for state, _ in score_states
+            for loss in ("hinge", "softmax")
+        }
+        compared = {key: 0 for key in mismatch_counts}
+        for state, scores in score_states:
+            for loss in ("hinge", "softmax"):
+                for class_index in range(4):
+                    expected, *_ = _class_coordinate_proposals(
+                        self.rows.X,
+                        self.rows.y,
+                        self.rows.counts,
+                        scores.copy(),
+                        class_index,
+                        loss,
+                        4,
+                        40,
+                    )
+                    actual, *_ = _class_block_proposals(
+                        self.rows.X,
+                        self.rows.y,
+                        self.rows.counts,
+                        scores.copy(),
+                        class_index,
+                        loss,
+                        4,
+                        40,
+                        color_groups,
+                    )
+                    for group in color_groups:
+                        key = (state, loss)
+                        mismatch_counts[key] += int(np.count_nonzero(
+                            expected[group] != actual[group]
+                        ))
+                        compared[key] += group.size
+
+        for state, _ in score_states:
+            self.assertEqual(mismatch_counts[(state, "hinge")], 0)
+        print("block proposal offset mismatches:")
+        for state, _ in score_states:
+            print(
+                f"  {state}: "
+                f"hinge={mismatch_counts[(state, 'hinge')]}/"
+                f"{compared[(state, 'hinge')]}, "
+                f"softmax={mismatch_counts[(state, 'softmax')]}/"
+                f"{compared[(state, 'softmax')]}"
+            )
+
+    def test_blocks_softmax_loss_is_nonincreasing(self):
+        _, stats = fit_readout(
+            self.rows,
+            max_sweeps=3,
+            progress=False,
+            strategy="blocks",
+        )
+        losses = stats["loss_per_sweep"]
+        self.assertLessEqual(losses[0], stats["initial_loss"])
+        self.assertTrue(all(
+            later <= earlier for earlier, later in zip(losses, losses[1:])
+        ))
+        self.assertGreater(stats["colors"], 0)
+        self.assertGreater(stats["max_color_size"], 0)
+        _, hinge_stats = fit_readout(
+            self.rows,
+            max_sweeps=3,
+            progress=False,
+            loss="hinge",
+            strategy="blocks",
+        )
+        hinge_losses = hinge_stats["loss_per_sweep"]
+        self.assertLessEqual(hinge_losses[0], hinge_stats["initial_loss"])
+        self.assertTrue(all(
+            later <= earlier
+            for earlier, later in zip(hinge_losses, hinge_losses[1:])
+        ))
+        with self.assertRaisesRegex(ValueError, "workers must be 1"):
+            fit_readout(
+                self.rows,
+                max_sweeps=0,
+                progress=False,
+                strategy="blocks",
+                workers=2,
+            )
+
+    def test_fit_cli_parses_blocks_strategy(self):
+        parsed = build_parser().parse_args([
+            "fit",
+            "--workbook",
+            "workbook.json",
+            "--text",
+            "text.txt",
+            "--offsets",
+            "1",
+            "--out",
+            "out",
+            "--strategy",
+            "blocks",
+        ])
+        self.assertEqual(parsed.strategy, "blocks")
 
 
 if __name__ == "__main__":

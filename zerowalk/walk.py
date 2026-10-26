@@ -158,3 +158,93 @@ def line_argmin(L: Callable[[int], int | float], max_k: int = 40):
     if unbounded[0]:
         return direction * (int(edge[0]) + 1), comparisons
     return direction * (int(edge[0]) + 1), comparisons
+
+
+def line_argmin_many(
+    L_many: Callable[[np.ndarray, np.ndarray], np.ndarray],
+    n_lines: int,
+    max_k: int = 40,
+) -> tuple[np.ndarray, int]:
+    """Return scalar-equivalent minimizers for independent convex lines."""
+    if n_lines < 0:
+        raise ValueError("n_lines must be nonnegative")
+
+    offsets = np.zeros(n_lines, dtype=np.int64)
+    comparisons = np.zeros(n_lines, dtype=np.int64)
+    caches: list[dict[int, int | float]] = [
+        {} for _ in range(n_lines)
+    ]
+
+    def evaluate(lines: np.ndarray, steps: np.ndarray) -> np.ndarray:
+        lines = np.asarray(lines, dtype=np.int64)
+        steps = np.asarray(steps, dtype=np.int64)
+        if lines.shape != steps.shape or lines.ndim != 1:
+            raise ValueError("lines and t must be equally sized 1D arrays")
+        result: list[int | float | None] = [None] * lines.size
+        missing_positions = []
+        missing_lines = []
+        missing_steps = []
+        for position, (line, step) in enumerate(zip(lines, steps)):
+            line_index = int(line)
+            step_value = int(step)
+            if step_value in caches[line_index]:
+                result[position] = caches[line_index][step_value]
+            else:
+                missing_positions.append(position)
+                missing_lines.append(line_index)
+                missing_steps.append(step_value)
+        if missing_positions:
+            values = np.asarray(L_many(
+                np.asarray(missing_lines, dtype=np.int64),
+                np.asarray(missing_steps, dtype=np.int64),
+            ))
+            if values.shape != (len(missing_positions),):
+                raise ValueError("L_many must return one value per line")
+            for position, line, step, value in zip(
+                missing_positions,
+                missing_lines,
+                missing_steps,
+                values,
+            ):
+                caches[line][step] = value
+                result[position] = value
+        return np.asarray(result)
+
+    line_indices = np.arange(n_lines, dtype=np.int64)
+    at_zero = evaluate(line_indices, np.zeros(n_lines, dtype=np.int64))
+    at_up = evaluate(line_indices, np.ones(n_lines, dtype=np.int64))
+    comparisons += 1
+    improves_up = at_up < at_zero
+    directions = np.zeros(n_lines, dtype=np.int64)
+    directions[improves_up] = 1
+
+    check_down = np.flatnonzero(~improves_up)
+    if check_down.size:
+        at_down = evaluate(
+            check_down,
+            np.full(check_down.size, -1, dtype=np.int64),
+        )
+        comparisons[check_down] += 1
+        improves_down = at_down < at_zero[check_down]
+        directions[check_down[improves_down]] = -1
+
+    active = np.flatnonzero(directions)
+    if active.size:
+        def improving(lines: np.ndarray, steps: np.ndarray) -> np.ndarray:
+            original_lines = active[lines]
+            direction = directions[original_lines]
+            next_values = evaluate(
+                original_lines,
+                direction * (steps + 1),
+            )
+            current_values = evaluate(
+                original_lines,
+                direction * steps,
+            )
+            comparisons[original_lines] += 1
+            return next_values < current_values
+
+        edge, _, _ = walk_edge(improving, active.size, max_k=max_k)
+        offsets[active] = directions[active] * (edge + 1)
+
+    return offsets, int(comparisons.sum())

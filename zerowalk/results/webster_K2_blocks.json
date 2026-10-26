@@ -1,0 +1,145 @@
+{
+  "method": "integer coordinate search; comparison-only zero walk",
+  "walk_edge_probe_bound": "For finite edge T, probes = 2 * floor(log2(T + 1)) + 1.",
+  "inputs": {
+    "workbook": {
+      "basename": "conical437_real_workbook.json",
+      "sha256": "a72d95fbf0ec5e7586b7797242c904936ed8a7c5a3a27d51d25bbb2957eb8d63"
+    },
+    "registry_dimensions": {
+      "basename": "registry_dimensions.tsv",
+      "sha256": "a2505a4957e023b774863980730049b9e4d17262a1fa60b0bdcdf1ff1d36751e"
+    },
+    "corpus": {
+      "basename": "webster.txt",
+      "sha256": "86fb9c28c32008ea288ca4bcf34f4f0d3d11ccf9e0898294d98b73671497f1d3"
+    }
+  },
+  "data": {
+    "accepted_records": 664293,
+    "rejected_records": 23058,
+    "train_records": 531434,
+    "test_records": 132859,
+    "train_positions": 20685753,
+    "test_positions": 5207715,
+    "distinct_train_rows": 6387,
+    "distinct_test_rows": 3713
+  },
+  "encoding": {
+    "features": 94,
+    "boolean_features": 21,
+    "one_hot_features": 73,
+    "profile_count": 26,
+    "profile_rank": 26,
+    "groups": [
+      " ",
+      "!\"&'*;?@\\",
+      "#%",
+      "$",
+      "([{",
+      ")]}",
+      "+",
+      ",./:",
+      "-",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "<>",
+      "=|~",
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      "^",
+      "_",
+      "`",
+      "abcdefghijklmnopqrstuvwxyz"
+    ],
+    "audit": "These groups are indistinguishable from defined evidence. Separating them requires binding E/R/M/V cells. Do not invent those values."
+  },
+  "offsets": 2,
+  "loss": "softmax",
+  "unit_bits": 4,
+  "strategy": "blocks",
+  "workers": 1,
+  "metrics": {
+    "walk_readout": {
+      "train_top1_accuracy": 0.19361784896106998,
+      "test_top1_accuracy": 0.1967075771235561
+    },
+    "feature_limited_bound": {
+      "train_top1_accuracy": 0.19742365675544904,
+      "test_top1_accuracy": 0.19827160280468498,
+      "distinct_train_contexts": 428,
+      "unseen_test_contexts": 7,
+      "fallback_class_index": 0
+    },
+    "majority_class": {
+      "class_index": 0,
+      "character": " ",
+      "train_top1_accuracy": 0.14353511810761735,
+      "test_top1_accuracy": 0.14635075076113035
+    },
+    "walk_readout_fit": {
+      "sweeps": 7,
+      "coordinates_walked": 125685,
+      "coordinates_moved": 19271,
+      "comparisons": 331008,
+      "wall_time_seconds": 30.886401474001104,
+      "loss_per_sweep": [
+        61364837.914156504,
+        60537696.575810835,
+        60332805.35293558,
+        60229515.70563189,
+        60174853.404067464,
+        60134873.2453699,
+        60102195.23431972
+      ],
+      "train_top1_accuracy_per_sweep": [
+        0.1873044215504265,
+        0.18979260750140448,
+        0.18979149562503236,
+        0.19361784896106998,
+        0.19361490007156132,
+        0.19361441664705173,
+        0.19361784896106998
+      ],
+      "initial_train_accuracy": 0.14353511810761735,
+      "final_train_accuracy": 0.19361784896106998,
+      "best_train_accuracy": 0.19361784896106998,
+      "best_train_accuracy_sweep": 4,
+      "initial_loss": 94200372.57205655,
+      "final_loss": 60102195.23431972,
+      "loss": "softmax",
+      "unit_bits": 4,
+      "stop_reason": "patience",
+      "stop_acc": null,
+      "patience": 3,
+      "strategy": "blocks",
+      "workers": 1,
+      "joint_steps": [],
+      "colors": 61,
+      "max_color_size": 12
+    },
+    "max_abs_weight": 561,
+    "weight_bits_signed": 11,
+    "nnz_weights": 4852,
+    "certify": {
+      "strict_margin_rows": 6314,
+      "base_tied_rows_excluded": 73,
+      "base_tied_positions_excluded": 358,
+      "unbounded_side_fraction": 0.7220272904483431,
+      "weights_with_unbounded_side": 12964,
+      "weight_count": 17955,
+      "median_finite_slack": 55.0,
+      "finite_slack_side_count": 22946,
+      "weights_whose_interval_contains_zero_individually": 17465,
+      "interval_zero_note": "individually, not jointly",
+      "max_k": 40
+    }
+  }
+}

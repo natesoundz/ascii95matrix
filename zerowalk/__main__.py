@@ -444,7 +444,7 @@ def build_parser() -> argparse.ArgumentParser:
     fit_parser.add_argument("--unit-bits", type=int, default=4)
     fit_parser.add_argument(
         "--strategy",
-        choices=("coordinate", "joint"),
+        choices=("coordinate", "joint", "blocks"),
         default="coordinate",
     )
     fit_parser.add_argument("--workers", type=int, default=1)
