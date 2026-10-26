@@ -464,6 +464,60 @@ class CombinedScriptTests(unittest.TestCase):
             self.assertTrue(np.array_equal(expected_W, actual_W))
             self.assertIsNotNone(model["certify"])
 
+    def test_joint_worker_determinism_and_monotone_loss(self):
+        serial_W, serial_stats = fit_readout(
+            self.rows,
+            max_sweeps=2,
+            progress=False,
+            strategy="joint",
+            workers=1,
+        )
+        parallel_W, parallel_stats = fit_readout(
+            self.rows,
+            max_sweeps=2,
+            progress=False,
+            strategy="joint",
+            workers=2,
+        )
+        self.assertTrue(np.array_equal(serial_W, parallel_W))
+        ignored = {"wall_time_seconds", "workers"}
+        self.assertEqual(
+            {key: value for key, value in serial_stats.items() if key not in ignored},
+            {key: value for key, value in parallel_stats.items() if key not in ignored},
+        )
+
+        _, three_sweep_stats = fit_readout(
+            self.rows,
+            max_sweeps=3,
+            progress=False,
+            strategy="joint",
+            workers=1,
+        )
+        losses = three_sweep_stats["loss_per_sweep"]
+        self.assertLessEqual(losses[0], three_sweep_stats["initial_loss"])
+        self.assertTrue(all(
+            later <= earlier for earlier, later in zip(losses, losses[1:])
+        ))
+
+    def test_fit_cli_parses_joint_strategy_and_workers(self):
+        parsed = build_parser().parse_args([
+            "fit",
+            "--workbook",
+            "workbook.json",
+            "--text",
+            "text.txt",
+            "--offsets",
+            "1",
+            "--out",
+            "out",
+            "--strategy",
+            "joint",
+            "--workers",
+            "2",
+        ])
+        self.assertEqual(parsed.strategy, "joint")
+        self.assertEqual(parsed.workers, 2)
+
 
 if __name__ == "__main__":
     unittest.main()

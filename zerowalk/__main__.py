@@ -172,6 +172,8 @@ def _fit(args: argparse.Namespace) -> int:
         patience=args.patience,
         loss=args.loss,
         unit_bits=args.unit_bits,
+        strategy=args.strategy,
+        workers=args.workers,
     )
     train_scores = scores_for(data.train, W)
     test_scores = scores_for(data.test, W)
@@ -259,6 +261,8 @@ def _fit(args: argparse.Namespace) -> int:
         "offsets": args.offsets,
         "loss": args.loss,
         "unit_bits": args.unit_bits,
+        "strategy": args.strategy,
+        "workers": args.workers,
         "metrics": metrics,
     }
     report_path = out_dir / "report.json"
@@ -438,6 +442,12 @@ def build_parser() -> argparse.ArgumentParser:
         default="softmax",
     )
     fit_parser.add_argument("--unit-bits", type=int, default=4)
+    fit_parser.add_argument(
+        "--strategy",
+        choices=("coordinate", "joint"),
+        default="coordinate",
+    )
+    fit_parser.add_argument("--workers", type=int, default=1)
     fit_parser.add_argument("--baselines", action="store_true")
     fit_parser.add_argument("--certify", action="store_true")
     fit_parser.set_defaults(run=_fit)

@@ -91,6 +91,44 @@ margin certification reports prediction-invariant integer slack in each
 coordinate direction. A reported weight interval containing zero means that
 weight can be set to zero **individually, not jointly**.
 
+### Joint walk per sweep
+
+`--strategy coordinate` remains the default Gauss–Seidel fit. Use
+`--strategy joint --workers N` to propose a Jacobi-style update each sweep;
+`--workers 1` avoids a process pool, while larger values create a fresh
+class-proposal pool per sweep.
+
+1. Freeze the exact score matrix and find each class-feature proposal with the same line objective as coordinate fit.
+2. Assemble proposals in class order; parallelize classes when `--workers` is greater than one.
+3. Search along the combined proposal, halving it until the full loss decreases; use float64 score matmul only when the absolute bound is below `2**53`.
+4. If no halved proposal improves loss, run one ordinary Gauss–Seidel sweep; retain the same stopping rules and per-sweep loss/accuracy metrics.
+
+```sh
+python -m zerowalk fit --workbook sqlir/conical437_real_workbook.json \
+  --text webster.txt --offsets 2 --out out_joint \
+  --strategy joint --workers 8
+```
+
+Webster fit comparison (top-1 percentages; coordinate values are from the
+committed reports; `nproc` was 8):
+
+| K | Strategy | Train / test top-1 | Sweeps | Fit seconds | Fallbacks |
+|---:|---|---:|---:|---:|---:|
+| 1 | coordinate | 17.2587 / 17.4269 | 7 | 4.125 | 0 |
+| 1 | joint, workers=1 | 15.2753 / 15.1554 | 7 | 14.309 | 0 |
+| 1 | joint, workers=8 | 15.2753 / 15.1554 | 7 | 2.777 | 0 |
+| 2 | coordinate | 19.3618 / 19.6708 | 7 | 20.263 | 0 |
+| 2 | joint, workers=1 | 17.9718 / 18.4393 | 8 | 67.593 | 0 |
+| 2 | joint, workers=8 | 17.9718 / 18.4393 | 8 | 10.661 | 0 |
+| 3 | coordinate | 20.5159 / 20.7719 | 15 | 372.829 | 0 |
+| 3 | joint, workers=1 | not run after K=3 cutoff | — | — | — |
+| 3 | joint, workers=8 | not completed (45-minute cutoff; proposal phase reached sweep 13) | — | — | — |
+
+The K=1/K=2 joint test accuracy is about 1.2–2.3 percentage points below
+coordinate fit, despite faster workers=8 fits; the one-worker joint fits were
+slower than coordinate. K=3 did not produce a complete joint report within
+the time limit, so only the completed workers=8 K=1/K=2 reports are committed.
+
 ## Discovering occurrence-bound distinctions
 
 `discover` adds one occurrence indicator per offset for every character in a
