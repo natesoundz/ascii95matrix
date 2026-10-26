@@ -11,6 +11,7 @@ This repository also contains one executable compiler extracted from the latest 
 | --- | --- |
 | `data/Canonical_ASCII95_Attribute_Matrix_v1.xlsx` | Authoritative character registry, interaction semantics, participation gates, and legend. |
 | `compile_weights.py` | One executable: validate inputs, compile evidence and staged weights, verify serialized arrays. Its `inspect` command performs workbook preflight. |
+| `zerowalk/` | NumPy-only integer comparison-search readout, canonical workbook audit, and prediction-invariance certificates. See `zerowalk/README.md`. |
 | `sqlir/README.md` | One-time SQL-IR database compiler, frozen artifact runtime, and verification commands. |
 | `legacy/architecture.json` | Explicit declaration of the supported historical architecture, numerical precision, and matrix checksum. |
 | `legacy/ASCII95_254_BINARY_MATRIX.tsv` | Required historical control substrate. It has no authority over the new registry. |
