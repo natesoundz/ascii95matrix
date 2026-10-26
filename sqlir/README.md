@@ -17,6 +17,28 @@ Lookup requests accept `offset` and `limit` for pagination; use the `count` oper
 `sqlir_exe.py` dispatches `serve`, `verify`, and `compile` for the optional
 PyInstaller executable; the artifact directory remains external to the exe.
 
+## Explore the lexicon
+
+`explore.py` runs a continuous, resumable discovery pass over the source
+SQLite (opened `mode=ro` with `query_only`), including the `sx_` syllable
+layer. State lives in a separate ledger SQLite; rerun the same command to
+resume, and `--watch` re-explores when the source file changes.
+
+```sh
+python -m sqlir.explore run --db PATH --ledger LEDGER.sqlite --report report.md
+python -m sqlir.explore run --db PATH --ledger LEDGER.sqlite --watch --report report.md
+python -m sqlir.explore report --ledger LEDGER.sqlite --out report.md
+```
+
+Probes come from the live schema (row counts, column profiles, top values,
+foreign-key orphans) plus syllable invariants (span contiguity/text/coverage,
+source-record reconstruction, character rows, one nucleus per phonetic
+syllable), Webster-vs-CMU syllable count and primary-stress comparisons, BEEP
+onset/nucleus/coda structure, phone inventories, 437-workbook codes weighted by
+letter tokens in syllables, and a frequency-driven walk of the syllable graph.
+Every probe stores the SHA-256 of its full result plus a bounded sample; the
+report records the source and schema SHA-256.
+
 ## Files
 
 - `catalog.py` introspects SQLite schemas and creates the query catalog.
@@ -26,7 +48,9 @@ PyInstaller executable; the artifact directory remains external to the exe.
 - `serve.py` provides JSON-lines and HTTP request interfaces.
 - `conical_sql_ir_transformer.py` and `conical437_real_workbook.json` are the
   user's source inputs, copied unchanged.
-- `tests/test_sqlir.py` contains only a software test fixture.
+- `explore.py` is the read-only lexicon/syllable explorer and report writer.
+- `tests/test_sqlir.py` and `tests/test_explore.py` contain only software test
+  fixtures.
 
 ## Honest boundaries
 
@@ -38,5 +62,9 @@ PyInstaller executable; the artifact directory remains external to the exe.
   README: character-histogram attribution is not proof of linguistic semantics,
   this is not an equivalent trained language model, and nearest-character
   output is a diagnostic rather than a validated decoder.
-- The SQLite test fixture is test-only and must never be compiled into a model
+- Explorer findings are observations over the source as stored: workbook
+  status codes (`X`, `E`, `R`, `M`, `U`, ...) are counted, never resolved; BEEP
+  candidate examples are word membership, not letter-aligned segmentation; the
+  stress comparison uses the first CMU pronunciation per lexeme.
+- The SQLite test fixtures are test-only and must never be compiled into a model
   artifact for use as data.
