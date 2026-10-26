@@ -723,6 +723,17 @@ def syllable_probes(tables: set[str]) -> list[Probe]:
         if "pronunciation" in tables:
             probes.append(
                 Probe(
+                    id="phon.cmu_inline_comments", family="syll.observation",
+                    title="CMU pronunciations carrying an inline '#' comment in phones (excluded from phone counts)",
+                    sql=(
+                        "SELECT p.pronunciation_id, l.normalized, p.phones FROM pronunciation p "
+                        "JOIN lexeme l USING(lexeme_id) WHERE instr(p.phones, '#') > 0 ORDER BY 1"
+                    ),
+                    priority=19, store_limit=500,
+                )
+            )
+            probes.append(
+                Probe(
                     id="phon.inventory_vs_cmu", family="syll.observation", py="phone_inventory",
                     title="Phone symbol inventory: BEEP syllables vs CMU pronunciations vs workbook phoneme sheet",
                     priority=19, store_limit=500,
@@ -1010,7 +1021,7 @@ def py_phone_inventory(con: sqlite3.Connection, params: tuple):
     beep = Counter(dict(con.execute("SELECT symbol, COUNT(*) FROM sx_phone GROUP BY 1")))
     cmu: Counter = Counter()
     for (phones,) in con.execute("SELECT phones FROM pronunciation"):
-        for phone in phones.split():
+        for phone in phones.split("#", 1)[0].split():
             cmu[phone.rstrip("012").lower()] += 1
     workbook: set[str] = set()
     try:
