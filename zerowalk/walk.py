@@ -121,16 +121,24 @@ def walk_edge(
     return edge, probes, unbounded
 
 
-def line_argmin(L: Callable[[int], int], max_k: int = 40):
+def line_argmin(L: Callable[[int], int | float], max_k: int = 40):
     """Return the smallest-absolute-value integer minimizer of convex ``L``."""
+    cache = {}
+
+    def evaluate(t: int):
+        t = int(t)
+        if t not in cache:
+            cache[t] = L(t)
+        return cache[t]
+
     comparisons = 0
-    at_zero = L(0)
-    at_up = L(1)
+    at_zero = evaluate(0)
+    at_up = evaluate(1)
     comparisons += 1
     if at_up < at_zero:
         direction = 1
     else:
-        at_down = L(-1)
+        at_down = evaluate(-1)
         comparisons += 1
         if at_down < at_zero:
             direction = -1
@@ -142,7 +150,7 @@ def line_argmin(L: Callable[[int], int], max_k: int = 40):
         result = np.empty(indices.shape, dtype=bool)
         for i, offset in enumerate(offsets):
             t = int(offset)
-            result[i] = L(direction * (t + 1)) < L(direction * t)
+            result[i] = evaluate(direction * (t + 1)) < evaluate(direction * t)
             comparisons += 1
         return result
 

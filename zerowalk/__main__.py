@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 from pathlib import Path
 import time
 
@@ -11,8 +12,21 @@ import numpy as np
 
 from .certify import certify
 from .data import PreparedData, prepare_data
+from .discover import (
+    build_merge_trees,
+    legacy_reference_matches,
+    partition_metrics,
+    prepare_discovery_data,
+)
 from .readout import fit_readout, scores_for, top1_accuracy
 from .workbook import DEFAULT_REGISTRY, load_workbook
+
+
+DEFAULT_LEGACY_REFERENCE = (
+    Path(__file__).resolve().parent.parent
+    / "legacy"
+    / "ASCII95_254_BINARY_MATRIX.tsv"
+)
 
 
 def _sha256(path: Path) -> str:
@@ -156,6 +170,8 @@ def _fit(args: argparse.Namespace) -> int:
         progress=True,
         stop_acc=args.stop_acc,
         patience=args.patience,
+        loss=args.loss,
+        unit_bits=args.unit_bits,
     )
     train_scores = scores_for(data.train, W)
     test_scores = scores_for(data.test, W)
@@ -241,6 +257,8 @@ def _fit(args: argparse.Namespace) -> int:
             ),
         },
         "offsets": args.offsets,
+        "loss": args.loss,
+        "unit_bits": args.unit_bits,
         "metrics": metrics,
     }
     report_path = out_dir / "report.json"
@@ -263,6 +281,140 @@ def _fit(args: argparse.Namespace) -> int:
     return 0
 
 
+def _discover(args: argparse.Namespace) -> int:
+    if not math.isfinite(args.tolerance) or args.tolerance < 0:
+        raise ValueError("tolerance must be a finite nonnegative value")
+    workbook_path = Path(args.workbook)
+    corpus_path = Path(args.text if args.text else args.records)
+    mode = "text" if args.text else "records"
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    encoding = load_workbook(workbook_path)
+    dataset = prepare_discovery_data(
+        mode,
+        corpus_path,
+        args.offsets,
+        encoding,
+    )
+    W, fit_stats = fit_readout(
+        dataset.train,
+        max_sweeps=args.max_sweeps,
+        progress=True,
+        patience=args.patience,
+        loss=args.loss,
+        unit_bits=args.unit_bits,
+    )
+    train_scores = scores_for(dataset.train, W)
+    test_scores = scores_for(dataset.test, W)
+    trees = build_merge_trees(
+        dataset.train,
+        W,
+        encoding,
+        dataset.occurrence_chars,
+    )
+    partition = partition_metrics(
+        dataset,
+        W,
+        trees,
+        args.offsets,
+        args.tolerance,
+    )
+    legacy = legacy_reference_matches(trees, DEFAULT_LEGACY_REFERENCE)
+    legacy["sha256"] = _sha256(DEFAULT_LEGACY_REFERENCE)
+    top_splits = [
+        {
+            "group": tree["group"],
+            "cluster_A": tree["merges"][-1]["cluster_A"],
+            "cluster_B": tree["merges"][-1]["cluster_B"],
+            "kept_representative": tree["merges"][-1][
+                "kept_representative"
+            ],
+        }
+        for tree in trees
+    ]
+    report = {
+        "method": "occurrence-bound integer search and greedy agglomerative merging",
+        "inputs": {
+            "workbook": {
+                "basename": workbook_path.name,
+                "sha256": _sha256(workbook_path),
+            },
+            "registry_dimensions": {
+                "basename": DEFAULT_REGISTRY.name,
+                "sha256": _sha256(DEFAULT_REGISTRY),
+            },
+            "corpus": {
+                "basename": corpus_path.name,
+                "sha256": _sha256(corpus_path),
+            },
+        },
+        "data": {
+            "accepted_records": dataset.accepted_records,
+            "rejected_records": dataset.rejected_records,
+            "train_records": dataset.train_records,
+            "test_records": dataset.test_records,
+            "train_positions": dataset.train.positions,
+            "test_positions": dataset.test.positions,
+            "distinct_train_rows": int(dataset.train.y.size),
+            "distinct_test_rows": int(dataset.test.y.size),
+            "distinct_train_contexts": int(np.unique(
+                dataset.train.context_keys,
+                axis=0,
+            ).shape[0]),
+            "distinct_test_contexts": int(np.unique(
+                dataset.test.context_keys,
+                axis=0,
+            ).shape[0]),
+        },
+        "offsets": args.offsets,
+        "loss": args.loss,
+        "unit_bits": args.unit_bits,
+        "occurrence_character_count": len(dataset.occurrence_chars),
+        "occurrence_characters": "".join(dataset.occurrence_chars),
+        "fit": {
+            "train_top1_accuracy": top1_accuracy(
+                train_scores,
+                dataset.train.y,
+                dataset.train.counts,
+            ),
+            "test_top1_accuracy": top1_accuracy(
+                test_scores,
+                dataset.test.y,
+                dataset.test.counts,
+            ),
+            "stats": fit_stats,
+        },
+        "merge_trees": trees,
+        "tolerance_partition": partition,
+        "top_splits": top_splits,
+        "external_reference": legacy,
+    }
+    report_path = out_dir / "discover.json"
+    report_path.write_text(
+        json.dumps(report, indent=2, ensure_ascii=True) + "\n",
+        encoding="utf-8",
+    )
+    print(
+        f"discover offsets={args.offsets}, loss={args.loss}, "
+        f"tolerance={args.tolerance}: train/test accuracy "
+        f"{partition['train_top1_accuracy']}/"
+        f"{partition['test_top1_accuracy']}"
+    )
+    for group in partition["clusters_by_group"]:
+        print(f"partition {group['group']!r}: {group['clusters']}")
+    for split in top_splits:
+        if split["group"] in {
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
+            "abcdefghijklmnopqrstuvwxyz",
+        }:
+            print(
+                f"top split {split['group']}: {split['cluster_A']} | "
+                f"{split['cluster_B']}"
+            )
+    print(f"report: {report_path}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m zerowalk")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -280,9 +432,34 @@ def build_parser() -> argparse.ArgumentParser:
     fit_parser.add_argument("--max-sweeps", type=int, default=50)
     fit_parser.add_argument("--stop-acc", type=float, default=None)
     fit_parser.add_argument("--patience", type=int, default=3)
+    fit_parser.add_argument(
+        "--loss",
+        choices=("softmax", "hinge"),
+        default="softmax",
+    )
+    fit_parser.add_argument("--unit-bits", type=int, default=4)
     fit_parser.add_argument("--baselines", action="store_true")
     fit_parser.add_argument("--certify", action="store_true")
     fit_parser.set_defaults(run=_fit)
+
+    discover_parser = commands.add_parser(
+        "discover",
+        help="fit occurrence-bound features and build merge trees",
+    )
+    discover_parser.add_argument("--workbook", required=True)
+    discover_input_group = discover_parser.add_mutually_exclusive_group(
+        required=True
+    )
+    discover_input_group.add_argument("--text")
+    discover_input_group.add_argument("--records")
+    discover_parser.add_argument("--offsets", type=int, default=1)
+    discover_parser.add_argument("--out", required=True)
+    discover_parser.add_argument("--tolerance", type=float, default=0.0)
+    discover_parser.add_argument("--loss", choices=("softmax", "hinge"), default="softmax")
+    discover_parser.add_argument("--unit-bits", type=int, default=4)
+    discover_parser.add_argument("--max-sweeps", type=int, default=50)
+    discover_parser.add_argument("--patience", type=int, default=3)
+    discover_parser.set_defaults(run=_discover)
     return parser
 
 

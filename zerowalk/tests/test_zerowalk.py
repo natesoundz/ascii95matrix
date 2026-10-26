@@ -9,6 +9,7 @@ import numpy as np
 
 from zerowalk.certify import certify
 from zerowalk.data import AggregatedRows
+from zerowalk.discover import build_merge_trees, prepare_discovery_data
 from zerowalk.__main__ import _write_model, build_parser
 from zerowalk.readout import (
     fit_readout,
@@ -97,6 +98,15 @@ class WalkTests(unittest.TestCase):
             self.assertEqual(actual, expected)
             self.assertGreater(comparisons, 0)
 
+        calls = {}
+
+        def counted_objective(t):
+            calls[t] = calls.get(t, 0) + 1
+            return abs(t - 4)
+
+        self.assertEqual(line_argmin(counted_objective)[0], 4)
+        self.assertTrue(all(count == 1 for count in calls.values()))
+
 
 class WorkbookAndReadoutTests(unittest.TestCase):
     @classmethod
@@ -143,7 +153,12 @@ class WorkbookAndReadoutTests(unittest.TestCase):
             counts=np.ones(y.size, dtype=np.int64),
             context_keys=np.arange(y.size, dtype=np.int64),
         )
-        W, fit = fit_readout(rows, max_sweeps=20, progress=False)
+        W, fit = fit_readout(
+            rows,
+            max_sweeps=20,
+            progress=False,
+            loss="hinge",
+        )
         self.assertLessEqual(fit["final_loss"], fit["initial_loss"])
         self.assertGreater(
             fit["final_train_accuracy"],
@@ -155,6 +170,7 @@ class WorkbookAndReadoutTests(unittest.TestCase):
             max_sweeps=20,
             stop_acc=first_sweep_accuracy,
             progress=False,
+            loss="hinge",
         )
         self.assertEqual(stopped["sweeps"], 1)
         self.assertEqual(stopped["stop_reason"], "stop_acc")
@@ -164,6 +180,19 @@ class WorkbookAndReadoutTests(unittest.TestCase):
             str(first_sweep_accuracy),
         ])
         self.assertEqual(parsed.stop_acc, first_sweep_accuracy)
+        self.assertEqual(parsed.loss, "softmax")
+        self.assertEqual(parsed.unit_bits, 4)
+
+        softmax_W, softmax_fit = fit_readout(
+            rows,
+            max_sweeps=50,
+            progress=False,
+        )
+        self.assertEqual(softmax_fit["loss"], "softmax")
+        self.assertEqual(
+            top1_accuracy(scores_for(rows, softmax_W), y, rows.counts),
+            1.0,
+        )
 
         self.assertEqual(
             top1_accuracy(scores_for(rows, W), y, rows.counts),
@@ -225,6 +254,71 @@ class WorkbookAndReadoutTests(unittest.TestCase):
                 self.assertTrue(
                     str(model["feature_names"][1]).startswith("offset_-1:")
                 )
+
+    def test_discover_merge_tree_costs_on_readme_software_fixture(self):
+        dataset = prepare_discovery_data(
+            "text",
+            ROOT / "README.md",
+            offsets=1,
+            encoding=self.encoding,
+            progress=False,
+        )
+        W, _ = fit_readout(
+            dataset.train,
+            max_sweeps=1,
+            progress=False,
+            loss="softmax",
+        )
+        trees = build_merge_trees(
+            dataset.train,
+            W,
+            self.encoding,
+            dataset.occurrence_chars,
+        )
+        self.assertEqual(len(dataset.occurrence_chars), 78)
+        columns = {
+            name: index for index, name in enumerate(dataset.feature_names)
+        }
+        for tree in trees:
+            self.assertEqual(
+                len(tree["merges"]),
+                len(tree["members"]) - 1,
+            )
+            effective = W.copy()
+            for merge in tree["merges"]:
+                before = dataset.train.X @ effective.T
+                old_correct = int(np.dot(
+                    dataset.train.counts,
+                    np.argmax(before, axis=1) == dataset.train.y,
+                ))
+                for char in merge["moved_cluster"]:
+                    source = columns[f"occurrence.o1.{char}"]
+                    target = columns[
+                        f"occurrence.o1.{merge['kept_representative']}"
+                    ]
+                    effective[:, source] = effective[:, target]
+                after = dataset.train.X @ effective.T
+                new_correct = int(np.dot(
+                    dataset.train.counts,
+                    np.argmax(after, axis=1) == dataset.train.y,
+                ))
+                self.assertEqual(
+                    merge["cost_positions"],
+                    old_correct - new_correct,
+                )
+                self.assertEqual(
+                    merge["train_accuracy_after"],
+                    new_correct / dataset.train.positions,
+                )
+
+        parsed = build_parser().parse_args([
+            "discover", "--workbook", "workbook.json", "--text", "text.txt",
+            "--out", "out",
+        ])
+        self.assertEqual(parsed.offsets, 1)
+        self.assertEqual(parsed.loss, "softmax")
+        self.assertEqual(parsed.unit_bits, 4)
+        self.assertEqual(parsed.tolerance, 0.0)
 
 
 if __name__ == "__main__":

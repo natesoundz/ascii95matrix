@@ -62,10 +62,12 @@
     "audit": "These groups are indistinguishable from defined evidence. Separating them requires binding E/R/M/V cells. Do not invent those values."
   },
   "offsets": 1,
+  "loss": "softmax",
+  "unit_bits": 4,
   "metrics": {
     "walk_readout": {
-      "train_top1_accuracy": 0.14598090772910224,
-      "test_top1_accuracy": 0.1488063382884816
+      "train_top1_accuracy": 0.17258719080712218,
+      "test_top1_accuracy": 0.1742687531863783
     },
     "feature_limited_bound": {
       "train_top1_accuracy": 0.17258796428633755,
@@ -81,52 +83,62 @@
       "test_top1_accuracy": 0.14635075076113035
     },
     "walk_readout_fit": {
-      "sweeps": 3,
-      "coordinates_walked": 27075,
-      "coordinates_moved": 20,
-      "comparisons": 54156,
-      "wall_time_seconds": 2.103999748999968,
+      "sweeps": 7,
+      "coordinates_walked": 63175,
+      "coordinates_moved": 6513,
+      "comparisons": 160160,
+      "wall_time_seconds": 4.124666955999828,
       "loss_per_sweep": [
-        19924098,
-        19924094,
-        19924094
+        63579105.995768294,
+        62984115.97282547,
+        62816564.552572966,
+        62729259.04098741,
+        62684828.10070807,
+        62652900.620194726,
+        62627251.13781203
       ],
       "train_top1_accuracy_per_sweep": [
-        0.14598081104420033,
-        0.14598090772910224,
-        0.14598090772910224
+        0.16689965310907465,
+        0.16876436647000473,
+        0.16876436647000473,
+        0.17258719080712218,
+        0.17258719080712218,
+        0.17258719080712218,
+        0.17258719080712218
       ],
       "initial_train_accuracy": 0.14353511810761735,
-      "final_train_accuracy": 0.14598090772910224,
-      "best_train_accuracy": 0.14598090772910224,
-      "best_train_accuracy_sweep": 2,
-      "initial_loss": 20685753,
-      "final_loss": 19924094,
-      "stop_reason": "coordinate_wise_optimum",
+      "final_train_accuracy": 0.17258719080712218,
+      "best_train_accuracy": 0.17258719080712218,
+      "best_train_accuracy_sweep": 4,
+      "initial_loss": 94200372.57205655,
+      "final_loss": 62627251.13781203,
+      "loss": "softmax",
+      "unit_bits": 4,
+      "stop_reason": "patience",
       "stop_acc": null,
       "patience": 3
     },
-    "max_abs_weight": 2,
-    "weight_bits_signed": 3,
-    "nnz_weights": 20,
+    "max_abs_weight": 543,
+    "weight_bits_signed": 11,
+    "nnz_weights": 2124,
     "sklearn_logistic_regression": {
       "train_top1_accuracy": 0.1725740416604607,
       "test_top1_accuracy": 0.17425780788695233,
-      "fit_time_seconds": 12.964776355999902,
+      "fit_time_seconds": 19.420115015999954,
       "solver": "lbfgs",
       "C": 1.0,
       "max_iter": 1000
     },
     "certify": {
-      "strict_margin_rows": 498,
-      "base_tied_rows_excluded": 659,
-      "base_tied_positions_excluded": 19278832,
-      "unbounded_side_fraction": 0.8710249307479224,
-      "weights_with_unbounded_side": 7861,
+      "strict_margin_rows": 1157,
+      "base_tied_rows_excluded": 0,
+      "base_tied_positions_excluded": 0,
+      "unbounded_side_fraction": 0.7740720221606648,
+      "weights_with_unbounded_side": 6986,
       "weight_count": 9025,
-      "median_finite_slack": 0.0,
-      "finite_slack_side_count": 7719,
-      "weights_whose_interval_contains_zero_individually": 9018,
+      "median_finite_slack": 133.0,
+      "finite_slack_side_count": 11064,
+      "weights_whose_interval_contains_zero_individually": 8972,
       "interval_zero_note": "individually, not jointly",
       "max_k": 40
     }

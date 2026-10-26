@@ -17,6 +17,8 @@ py -3.12 -m pip install scikit-learn
 py -3.12 -m zerowalk audit --workbook sqlir\conical437_real_workbook.json
 py -3.12 -m zerowalk fit --workbook sqlir\conical437_real_workbook.json --text webster.txt --offsets 1 --out run_k1 --baselines --certify
 py -3.12 -m zerowalk fit --workbook sqlir\conical437_real_workbook.json --text webster.txt --offsets 2 --out run_k2 --baselines --certify
+py -3.12 -m zerowalk discover --workbook sqlir\conical437_real_workbook.json --text webster.txt --offsets 1 --out discover_k1
+py -3.12 -m zerowalk discover --workbook sqlir\conical437_real_workbook.json --text webster.txt --offsets 2 --out discover_k2
 ```
 
 Use `--records records.jsonl` instead of `--text webster.txt` for
@@ -58,14 +60,20 @@ those values.
 ## Search and evaluation
 
 The fit is a Gauss–Seidel coordinate search on an integer 95 × D matrix. Its
-objective is the count-weighted, unit-margin Crammer–Singer hinge loss. For
-each class-coordinate line, the readout evaluates only rows where that input
-coordinate is nonzero. `line_argmin` walks whichever direction initially
-improves, gallops over improving integer steps, then bisects the monotone
-improvement edge. `walk_edge` probes `1, 3, 7, …, 2^(k+1)−1`; for an edge at
-integer `T`, the exhaustive test fixture uses
-`2 * floor(log2(T + 1)) + 1` total probes (gallop plus bisection). All loops
-are exact `int64` computations and progress/ETA is sent to stderr.
+default `--loss softmax` objective is
+`Σ nᵢ (logsumexp(u·sᵢ) − u·sᵢ,y)`, with exact `int64` scores
+`s = X Wᵀ`, float64 evaluation, and `u = 2**-unit_bits` (default
+`--unit-bits 4`). For each class-coordinate line, the readout caches the
+log-sum-exp over the other classes for that class sweep and evaluates only
+rows where that input coordinate is nonzero. `--loss hinge` selects the
+count-weighted, unit-margin Crammer–Singer hinge objective used by the first
+version of this package. `line_argmin` memoizes objective probes, walks
+whichever direction initially improves, gallops over improving integer steps,
+then bisects the monotone improvement edge. Float64 rounding can make the
+softmax line objective flat or noisy within about `1e-12` relative near its
+minimum. `walk_edge` probes `1, 3, 7, …, 2^(k+1)−1`; for an edge at integer
+`T`, the exhaustive test fixture uses `2 * floor(log2(T + 1)) + 1` total
+probes (gallop plus bisection). Progress/ETA is sent to stderr.
 
 The user-provided `zero_walk.py` is copied byte-for-byte as
 `zerowalk/zero_walk.py`; both original `bracket_walk` definitions remain
@@ -82,6 +90,30 @@ contexts can attain on those aggregated training samples. Optional strict
 margin certification reports prediction-invariant integer slack in each
 coordinate direction. A reported weight interval containing zero means that
 weight can be set to zero **individually, not jointly**.
+
+## Discovering occurrence-bound distinctions
+
+`discover` adds one occurrence indicator per offset for every character in a
+multi-member workbook profile, while keeping the ordinary workbook profile
+features. Its context keys retain the actual preceding characters (plus an
+absent value), so only real corpus occurrences can distinguish members. The
+canonical multi-member groups contain 78 member characters across 9 groups
+(69 total merges); the set size is derived from the groups rather than
+hard-coded.
+
+Each group's merge tree starts with singleton characters. A candidate merge
+copies one cluster representative's occurrence-weight blocks to the other
+cluster without refitting; the lower drop in count-weighted train correct
+positions wins. The tree records every merge cost and accuracy. The
+`--tolerance τ` partition applies merges in recorded order while
+`cost_positions <= τ * train_positions`, stopping at the first larger cost.
+The output reports that partition's train/test accuracy and clusters.
+
+For the uppercase and lowercase alphabet groups, `discover.json` also compares
+the final tree split with the five most-agreeing columns from
+`legacy/ASCII95_254_BINARY_MATRIX.tsv`, allowing either polarity. This is an
+**external reference, not used in fit**; it does not add features, labels, or
+constraints to the discovered model.
 
 ## Boundaries
 
