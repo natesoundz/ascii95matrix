@@ -128,3 +128,35 @@ constraints to the discovered model.
 - Test-only piecewise-linear fixtures are software fixtures, not observations
   or training data. Benchmark reports use the supplied real corpus and include
   SHA-256 provenance.
+
+## Single-file walk (`zero_walk_combined.py`)
+
+`zero_walk_combined.py` is a standalone version containing the original walk,
+vectorized walks and marbles, integer softmax/hinge readout, and strict-margin
+certification. It uses only the Python standard library and NumPy; it does not
+import this package. `zero_walk.py` is Nate's original, kept byte-identical as
+the parity reference.
+
+From the repository root on Windows:
+
+```powershell
+py -3.12 -m pip install numpy
+py -3.12 zerowalk\zero_walk_combined.py selftest
+py -3.12 zerowalk\zero_walk_combined.py run --old old.json --new new.json --out delta.json
+py -3.12 zerowalk\zero_walk_combined.py fit --rows rows.json --out model.json --certify
+```
+
+The `fit` command accepts a JSON object with `X` as a rectangular matrix,
+`y` as one integer class label per row, optional positive integer `counts`
+(default 1 per row), and optional integer `classes` (default `max(y) + 1`).
+`X` must contain integers unless `--unit U` is supplied; then values are
+quantized with `round(x / U)`.
+
+The committed Webster reports show softmax walk test top-1 accuracies of
+17.43%, 19.67%, and 20.77% for K=1/2/3, versus logistic-regression 17.43%,
+19.87%, and 20.78%; the hinge K1 walk reached 14.88%. Discovery fit test
+accuracy was 24.4% at K1 and 32.2% at K2. The tolerance-zero partition reports
+24.4087% and 32.2768% respectively (the latter rounds to 32.3%). The K1
+uppercase top split is `BCDFGHJKLMNPQRSTVWXYZ | AEIOU`; its legacy consonant
+and vowel-related columns agree at 1.0. This is an external reference, not
+used in fit.

@@ -1,6 +1,12 @@
 """Software fixtures and canonical-workbook tests for the zero-walk package."""
 from __future__ import annotations
 
+import argparse
+import hashlib
+import importlib.util
+import json
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -8,7 +14,7 @@ from tempfile import TemporaryDirectory
 import numpy as np
 
 from zerowalk.certify import certify
-from zerowalk.data import AggregatedRows
+from zerowalk.data import AggregatedRows, prepare_data
 from zerowalk.discover import build_merge_trees, prepare_discovery_data
 from zerowalk.__main__ import _write_model, build_parser
 from zerowalk.readout import (
@@ -23,6 +29,13 @@ from zerowalk import zero_walk
 
 
 ROOT = Path(__file__).resolve().parents[2]
+COMBINED_PATH = ROOT / "zerowalk" / "zero_walk_combined.py"
+COMBINED_SPEC = importlib.util.spec_from_file_location(
+    "zero_walk_combined",
+    COMBINED_PATH,
+)
+COMBINED = importlib.util.module_from_spec(COMBINED_SPEC)
+COMBINED_SPEC.loader.exec_module(COMBINED)
 
 
 class WalkTests(unittest.TestCase):
@@ -319,6 +332,137 @@ class WorkbookAndReadoutTests(unittest.TestCase):
         self.assertEqual(parsed.loss, "softmax")
         self.assertEqual(parsed.unit_bits, 4)
         self.assertEqual(parsed.tolerance, 0.0)
+
+
+class CombinedScriptTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.encoding = load_workbook(
+            ROOT / "sqlir" / "conical437_real_workbook.json"
+        )
+        cls.rows = prepare_data(
+            "text",
+            ROOT / "README.md",
+            1,
+            cls.encoding,
+        ).train
+
+    def test_original_script_hash_is_unchanged(self):
+        digest = hashlib.sha256(
+            (ROOT / "zerowalk" / "zero_walk.py").read_bytes()
+        ).hexdigest()
+        self.assertEqual(
+            digest,
+            "74a10c77c00e3158907d885a47879237ad8cf527f0b59dccac985dd0c64d3efe",
+        )
+
+    def test_combined_selftest_software_fixture(self):
+        self.assertEqual(
+            COMBINED.selftest(argparse.Namespace(range=20)),
+            0,
+        )
+        with self.assertRaisesRegex(ValueError, "at least 3"):
+            COMBINED._off_label_top_two(
+                np.zeros((1, 2), dtype=np.int64),
+                np.zeros(1, dtype=np.int64),
+                2,
+            )
+
+    def test_real_text_readout_and_certify_parity(self):
+        softmax_weights = None
+        for loss in ("softmax", "hinge"):
+            with self.subTest(loss=loss):
+                package_W, package_stats = fit_readout(
+                    self.rows,
+                    max_sweeps=2,
+                    progress=False,
+                    loss=loss,
+                )
+                combined_W, combined_stats = COMBINED.fit_readout(
+                    self.rows.X,
+                    self.rows.y,
+                    self.rows.counts,
+                    95,
+                    max_sweeps=2,
+                    progress=False,
+                    loss=loss,
+                )
+                self.assertTrue(np.array_equal(package_W, combined_W))
+                self.assertEqual(
+                    package_stats["loss_per_sweep"],
+                    combined_stats["loss_per_sweep"],
+                )
+                self.assertEqual(
+                    package_stats["train_top1_accuracy_per_sweep"],
+                    combined_stats["train_top1_accuracy_per_sweep"],
+                )
+                self.assertEqual(
+                    package_stats["stop_reason"],
+                    combined_stats["stop_reason"],
+                )
+                if loss == "softmax":
+                    softmax_weights = package_W
+
+        package_up, package_down, package_summary = certify(
+            self.rows,
+            softmax_weights,
+            progress=False,
+        )
+        combined_up, combined_down, combined_summary = COMBINED.certify(
+            self.rows.X,
+            self.rows.y,
+            self.rows.counts,
+            softmax_weights,
+            progress=False,
+        )
+        self.assertTrue(np.array_equal(package_up, combined_up))
+        self.assertTrue(np.array_equal(package_down, combined_down))
+        self.assertEqual(package_summary, combined_summary)
+
+    def test_fit_cli_round_trip_on_real_text_rows(self):
+        rows_json = {
+            "X": self.rows.X.tolist(),
+            "y": self.rows.y.tolist(),
+            "counts": self.rows.counts.tolist(),
+            "classes": 95,
+        }
+        with TemporaryDirectory() as directory:
+            rows_path = Path(directory) / "rows.json"
+            model_path = Path(directory) / "model.json"
+            rows_path.write_text(json.dumps(rows_json), encoding="utf-8")
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    str(COMBINED_PATH),
+                    "fit",
+                    "--rows",
+                    str(rows_path),
+                    "--out",
+                    str(model_path),
+                    "--max-sweeps",
+                    "1",
+                    "--certify",
+                ],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+            self.assertIn("fit: softmax", completed.stdout)
+            model = json.loads(model_path.read_text(encoding="utf-8"))
+            expected_W, _ = COMBINED.fit_readout(
+                self.rows.X,
+                self.rows.y,
+                self.rows.counts,
+                95,
+                max_sweeps=1,
+                progress=False,
+            )
+            actual_W = np.asarray(
+                model["W"]["data"],
+                dtype=np.int64,
+            ).reshape(model["W"]["shape"])
+            self.assertTrue(np.array_equal(expected_W, actual_W))
+            self.assertIsNotNone(model["certify"])
 
 
 if __name__ == "__main__":
