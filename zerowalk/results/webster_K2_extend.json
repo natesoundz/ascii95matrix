@@ -1,0 +1,449 @@
+{
+  "method": "coordinate softmax class extension with optional no-flip protection",
+  "inputs": {
+    "workbook": {
+      "basename": "conical437_real_workbook.json",
+      "sha256": "a72d95fbf0ec5e7586b7797242c904936ed8a7c5a3a27d51d25bbb2957eb8d63"
+    },
+    "corpus": {
+      "basename": "webster.txt",
+      "sha256": "86fb9c28c32008ea288ca4bcf34f4f0d3d11ccf9e0898294d98b73671497f1d3"
+    }
+  },
+  "data": {
+    "accepted_records": 664293,
+    "rejected_records": 23058,
+    "train_records": 531434,
+    "test_records": 132859,
+    "train_positions": 20685753,
+    "test_positions": 5207715,
+    "distinct_train_rows": 6387,
+    "distinct_test_rows": 3713
+  },
+  "offsets": 2,
+  "retrain_fit": {
+    "sweeps": 7,
+    "coordinates_walked": 125685,
+    "coordinates_moved": 19114,
+    "comparisons": 330515,
+    "wall_time_seconds": 18.825497983998503,
+    "loss_per_sweep": [
+      61364840.41475321,
+      60537696.846808515,
+      60332805.49319586,
+      60229515.83938537,
+      60174853.28277768,
+      60134873.2023207,
+      60102195.29203401
+    ],
+    "train_top1_accuracy_per_sweep": [
+      0.1873044215504265,
+      0.18979260750140448,
+      0.18979149562503236,
+      0.19361784896106998,
+      0.19361490007156132,
+      0.19361441664705173,
+      0.19361784896106998
+    ],
+    "initial_train_accuracy": 0.14353511810761735,
+    "final_train_accuracy": 0.19361784896106998,
+    "best_train_accuracy": 0.19361784896106998,
+    "best_train_accuracy_sweep": 4,
+    "initial_loss": 94200372.57205655,
+    "final_loss": 60102195.29203401,
+    "loss": "softmax",
+    "unit_bits": 4,
+    "stop_reason": "patience",
+    "stop_acc": null,
+    "patience": 3,
+    "strategy": "coordinate",
+    "workers": 1,
+    "joint_steps": []
+  },
+  "holdouts": [
+    {
+      "character": "e",
+      "class_index": 69,
+      "models": {
+        "base": {
+          "fit": {
+            "wall_time_seconds": 40.360457496999516,
+            "comparisons": 664496,
+            "sweeps": 16,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.1906276749993099,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 1721869
+          },
+          "test": {
+            "top1_accuracy": 0.19399736736745388,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 430887
+          }
+        },
+        "add_protected": {
+          "fit": {
+            "wall_time_seconds": 0.40068652300033136,
+            "comparisons": 2920,
+            "sweeps": 5,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": -7,
+              "final": -7
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19062960869734835,
+            "recall_on_holdout": 2.3230570966780863e-05,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 1721869
+          },
+          "test": {
+            "top1_accuracy": 0.19399813545864164,
+            "recall_on_holdout": 9.283176331613625e-06,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 430887
+          }
+        },
+        "add_free": {
+          "fit": {
+            "wall_time_seconds": 0.25981733499975235,
+            "comparisons": 1997,
+            "sweeps": 4,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": -7,
+              "final": -7
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19442192894790922,
+            "recall_on_holdout": 0.10020855245085428,
+            "flips_from_base_correct_non_holdout": 94059,
+            "holdout_positions": 1721869
+          },
+          "test": {
+            "top1_accuracy": 0.1975209856914213,
+            "recall_on_holdout": 0.09138358780840453,
+            "flips_from_base_correct_non_holdout": 21026,
+            "holdout_positions": 430887
+          }
+        },
+        "retrain": {
+          "fit": {
+            "wall_time_seconds": 18.825497983998503,
+            "comparisons": 330515,
+            "sweeps": 7,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19361784896106998,
+            "recall_on_holdout": 0.10020855245085428,
+            "flips_from_base_correct_non_holdout": 110711,
+            "holdout_positions": 1721869
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.09138358780840453,
+            "flips_from_base_correct_non_holdout": 25263,
+            "holdout_positions": 430887
+          }
+        }
+      }
+    },
+    {
+      "character": "y",
+      "class_index": 89,
+      "models": {
+        "base": {
+          "fit": {
+            "wall_time_seconds": 20.52063995900062,
+            "comparisons": 365886,
+            "sweeps": 8,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19361702713940362,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 253243
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 63973
+          }
+        },
+        "add_protected": {
+          "fit": {
+            "wall_time_seconds": 0.27298195399998804,
+            "comparisons": 2120,
+            "sweeps": 4,
+            "stop_reason": "coordinate_wise_optimum",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19361702713940362,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 253243
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 63973
+          }
+        },
+        "add_free": {
+          "fit": {
+            "wall_time_seconds": 0.23619467000025907,
+            "comparisons": 2120,
+            "sweeps": 4,
+            "stop_reason": "coordinate_wise_optimum",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19361702713940362,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 253243
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 63973
+          }
+        },
+        "retrain": {
+          "fit": {
+            "wall_time_seconds": 18.825497983998503,
+            "comparisons": 330515,
+            "sweeps": 7,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19361784896106998,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 40,
+            "holdout_positions": 253243
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 11,
+            "holdout_positions": 63973
+          }
+        }
+      }
+    },
+    {
+      "character": "k",
+      "class_index": 75,
+      "models": {
+        "base": {
+          "fit": {
+            "wall_time_seconds": 20.737518695999825,
+            "comparisons": 365800,
+            "sweeps": 8,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19362234480900936,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 94441
+          },
+          "test": {
+            "top1_accuracy": 0.1967104574655103,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 26366
+          }
+        },
+        "add_protected": {
+          "fit": {
+            "wall_time_seconds": 0.24850423499992758,
+            "comparisons": 1802,
+            "sweeps": 3,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19362234480900936,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 94441
+          },
+          "test": {
+            "top1_accuracy": 0.1967104574655103,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 26366
+          }
+        },
+        "add_free": {
+          "fit": {
+            "wall_time_seconds": 0.2219682200011448,
+            "comparisons": 1802,
+            "sweeps": 3,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.19362234480900936,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 94441
+          },
+          "test": {
+            "top1_accuracy": 0.1967104574655103,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 26366
+          }
+        },
+        "retrain": {
+          "fit": {
+            "wall_time_seconds": 18.825497983998503,
+            "comparisons": 330515,
+            "sweeps": 7,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19361784896106998,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 171,
+            "holdout_positions": 94441
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 28,
+            "holdout_positions": 26366
+          }
+        }
+      }
+    },
+    {
+      "character": "z",
+      "class_index": 90,
+      "models": {
+        "base": {
+          "fit": {
+            "wall_time_seconds": 25.77663233599924,
+            "comparisons": 441279,
+            "sweeps": 10,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.1936145616744046,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 13901
+          },
+          "test": {
+            "top1_accuracy": 0.19670277655363244,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 3326
+          }
+        },
+        "add_protected": {
+          "fit": {
+            "wall_time_seconds": 0.2331990919992677,
+            "comparisons": 1586,
+            "sweeps": 3,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.1936145616744046,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 13901
+          },
+          "test": {
+            "top1_accuracy": 0.19670277655363244,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 3326
+          }
+        },
+        "add_free": {
+          "fit": {
+            "wall_time_seconds": 0.21158213299895579,
+            "comparisons": 1586,
+            "sweeps": 3,
+            "stop_reason": "patience",
+            "new_class_bias": {
+              "initial": 0,
+              "final": 0
+            }
+          },
+          "train": {
+            "top1_accuracy": 0.1936145616744046,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 13901
+          },
+          "test": {
+            "top1_accuracy": 0.19670277655363244,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 0,
+            "holdout_positions": 3326
+          }
+        },
+        "retrain": {
+          "fit": {
+            "wall_time_seconds": 18.825497983998503,
+            "comparisons": 330515,
+            "sweeps": 7,
+            "stop_reason": "patience",
+            "new_class_bias": null
+          },
+          "train": {
+            "top1_accuracy": 0.19361784896106998,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 27,
+            "holdout_positions": 13901
+          },
+          "test": {
+            "top1_accuracy": 0.1967075771235561,
+            "recall_on_holdout": 0.0,
+            "flips_from_base_correct_non_holdout": 7,
+            "holdout_positions": 3326
+          }
+        }
+      }
+    }
+  ]
+}

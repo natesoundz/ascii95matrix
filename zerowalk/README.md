@@ -144,6 +144,47 @@ offsets matched the independent coordinate proposals exactly (0/380 at zero W
 and after one coordinate sweep); softmax had 15/380 and 22/380 offset
 mismatches, respectively, from floating-point summation.
 
+### Adding a vocabulary class without retraining
+
+`extend` fits a base model with one class omitted, then walks only that class's
+weights and a class-specific bias; all other weights stay frozen. The bias
+starts below every strictly-correct base target. Protected walks clamp each
+coordinate to preserve those strict margins, while free walks omit that clamp.
+Use repeatable `--holdout CHAR` options:
+
+```sh
+python -m zerowalk extend --workbook sqlir/conical437_real_workbook.json \
+  --text webster.txt --offsets 2 --holdout e --holdout y --holdout k \
+  --holdout z --out out_extend
+```
+
+Webster K=2 results; flips are count-weighted train/test positions that were
+base-correct with target other than the holdout and became wrong:
+
+| Holdout | Model | Train / test top-1 | Train / test recall on h | Train / test flips | Fit seconds | New-class bias (initial → final) |
+|---|---|---:|---:|---:|---:|---:|
+| e | base | 19.0628% / 19.3997% | 0.0000% / 0.0000% | 0 / 0 | 40.360 | — |
+| e | add_protected | 19.0630% / 19.3998% | 0.0023% / 0.0009% | 0 / 0 | 0.401 | −7 → −7 |
+| e | add_free | 19.4422% / 19.7521% | 10.0209% / 9.1384% | 94,059 / 21,026 | 0.260 | −7 → −7 |
+| e | retrain | 19.3618% / 19.6708% | 10.0209% / 9.1384% | 110,711 / 25,263 | 18.825 | — |
+| y | base | 19.3617% / 19.6708% | 0.0000% / 0.0000% | 0 / 0 | 20.521 | — |
+| y | add_protected | 19.3617% / 19.6708% | 0.0000% / 0.0000% | 0 / 0 | 0.273 | 0 → 0 |
+| y | add_free | 19.3617% / 19.6708% | 0.0000% / 0.0000% | 0 / 0 | 0.236 | 0 → 0 |
+| y | retrain | 19.3618% / 19.6708% | 0.0000% / 0.0000% | 40 / 11 | 18.825 | — |
+| k | base | 19.3622% / 19.6710% | 0.0000% / 0.0000% | 0 / 0 | 20.738 | — |
+| k | add_protected | 19.3622% / 19.6710% | 0.0000% / 0.0000% | 0 / 0 | 0.249 | 0 → 0 |
+| k | add_free | 19.3622% / 19.6710% | 0.0000% / 0.0000% | 0 / 0 | 0.222 | 0 → 0 |
+| k | retrain | 19.3618% / 19.6708% | 0.0000% / 0.0000% | 171 / 28 | 18.825 | — |
+| z | base | 19.3615% / 19.6703% | 0.0000% / 0.0000% | 0 / 0 | 25.777 | — |
+| z | add_protected | 19.3615% / 19.6703% | 0.0000% / 0.0000% | 0 / 0 | 0.233 | 0 → 0 |
+| z | add_free | 19.3615% / 19.6703% | 0.0000% / 0.0000% | 0 / 0 | 0.212 | 0 → 0 |
+| z | retrain | 19.3618% / 19.6708% | 0.0000% / 0.0000% | 27 / 7 | 18.825 | — |
+
+Only the `e` free walk gained meaningful holdout recall, but it introduced many
+train and test flips. The protected `e` walk preserved every base-correct
+non-holdout training position but recovered very little `e` recall; walks for
+`y`, `k`, and `z` left the model unchanged.
+
 ## Discovering occurrence-bound distinctions
 
 `discover` adds one occurrence indicator per offset for every character in a

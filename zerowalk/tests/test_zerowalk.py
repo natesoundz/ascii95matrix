@@ -17,6 +17,7 @@ from zerowalk.certify import certify
 from zerowalk.data import AggregatedRows, prepare_data
 from zerowalk.discover import build_merge_trees, prepare_discovery_data
 from zerowalk.__main__ import _write_model, build_parser
+from zerowalk.extend import add_class
 from zerowalk.readout import (
     _class_block_proposals,
     _class_coordinate_proposals,
@@ -409,6 +410,123 @@ class CombinedScriptTests(unittest.TestCase):
             digest,
             "74a10c77c00e3158907d885a47879237ad8cf527f0b59dccac985dd0c64d3efe",
         )
+
+    def test_active_class_mask_and_protected_extension(self):
+        holdout = ord("e") - 32
+        active_classes = np.ones(95, dtype=bool)
+        active_classes[holdout] = False
+        train_mask = self.rows.y != holdout
+        base_rows = AggregatedRows(
+            self.rows.X[train_mask],
+            self.rows.y[train_mask],
+            self.rows.counts[train_mask],
+            self.rows.context_keys[train_mask],
+        )
+        W_base, _ = fit_readout(
+            base_rows,
+            progress=False,
+            active_classes=active_classes,
+        )
+        self.assertFalse(np.any(W_base[holdout]))
+        base_scores = self.rows.X @ W_base.T
+        active_indices = np.flatnonzero(active_classes)
+        base_predictions = active_indices[
+            np.argmax(base_scores[:, active_indices], axis=1)
+        ]
+        self.assertFalse(np.any(base_predictions == holdout))
+
+        W_protected, protected_stats = add_class(
+            self.rows,
+            W_base,
+            holdout,
+            protect=True,
+        )
+        _, free_stats = add_class(
+            self.rows,
+            W_base,
+            holdout,
+            protect=False,
+        )
+        self.assertEqual(
+            protected_stats["new_class_bias"]["initial"],
+            free_stats["new_class_bias"]["initial"],
+        )
+        extended_scores = self.rows.X @ W_protected.T
+        extended_scores[:, holdout] += protected_stats[
+            "new_class_bias"
+        ]["final"]
+        extended_predictions = np.argmax(extended_scores, axis=1)
+        base_correct_non_holdout = (
+            (base_predictions == self.rows.y)
+            & (self.rows.y != holdout)
+        )
+        train_flips = int(self.rows.counts[
+            base_correct_non_holdout
+            & (extended_predictions != self.rows.y)
+        ].sum())
+        self.assertEqual(train_flips, 0)
+
+        base_scores[:, holdout] = np.iinfo(np.int64).min
+        target_scores = base_scores[
+            np.arange(self.rows.y.size),
+            self.rows.y,
+        ]
+        other_scores = base_scores.copy()
+        other_scores[
+            np.arange(self.rows.y.size),
+            self.rows.y,
+        ] = np.iinfo(np.int64).min
+        protected_rows = (
+            (target_scores > other_scores.max(axis=1))
+            & (self.rows.y != holdout)
+        )
+        self.assertTrue(np.all(
+            extended_scores[protected_rows, holdout]
+            < target_scores[protected_rows]
+        ))
+
+        with self.assertRaises(ValueError):
+            fit_readout(
+                base_rows,
+                max_sweeps=0,
+                progress=False,
+                strategy="joint",
+                active_classes=active_classes,
+            )
+        with self.assertRaises(ValueError):
+            fit_readout(
+                base_rows,
+                max_sweeps=0,
+                progress=False,
+                loss="hinge",
+                active_classes=active_classes,
+            )
+        with self.assertRaises(ValueError):
+            fit_readout(
+                self.rows,
+                max_sweeps=0,
+                progress=False,
+                active_classes=active_classes,
+            )
+
+    def test_extend_cli_parsing(self):
+        args = build_parser().parse_args([
+            "extend",
+            "--workbook",
+            "workbook.json",
+            "--text",
+            "text.txt",
+            "--offsets",
+            "2",
+            "--holdout",
+            "e",
+            "--holdout",
+            "y",
+            "--out",
+            "out",
+        ])
+        self.assertEqual(args.holdout, ["e", "y"])
+        self.assertEqual(args.offsets, 2)
 
     def test_combined_selftest_software_fixture(self):
         self.assertEqual(

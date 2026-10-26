@@ -14,6 +14,20 @@ from .walk import line_argmin, line_argmin_many
 N_CLASSES = 95
 
 
+def _validate_class_mask(
+    class_mask: np.ndarray | None,
+    n_classes: int,
+) -> np.ndarray | None:
+    if class_mask is None:
+        return None
+    mask = np.asarray(class_mask)
+    if mask.dtype != np.bool_ or mask.shape != (n_classes,):
+        raise ValueError("class_mask must be a bool array with one entry per class")
+    if not np.any(mask):
+        raise ValueError("class_mask must include at least one active class")
+    return mask
+
+
 def weighted_loss(scores: np.ndarray, y: np.ndarray, counts: np.ndarray) -> int:
     if y.size == 0:
         return 0
@@ -30,11 +44,21 @@ def softmax_loss(
     y: np.ndarray,
     counts: np.ndarray,
     unit_bits: int = 4,
+    class_mask: np.ndarray | None = None,
 ) -> float:
     if y.size == 0:
         return 0.0
+    class_mask = _validate_class_mask(class_mask, scores.shape[1])
+    if class_mask is not None and (
+        np.any(y < 0)
+        or np.any(y >= class_mask.size)
+        or np.any(~class_mask[y])
+    ):
+        raise ValueError("targets must belong to active classes")
     unit = 2.0 ** -unit_bits
     logits = scores.astype(np.float64) * unit
+    if class_mask is not None:
+        logits[:, ~class_mask] = -np.inf
     maximum = logits.max(axis=1)
     logsumexp = maximum + np.log(
         np.exp(logits - maximum[:, None]).sum(axis=1)
@@ -47,23 +71,47 @@ def _other_logsumexp(
     scores: np.ndarray,
     class_index: int,
     unit: float,
+    class_mask: np.ndarray | None = None,
 ) -> np.ndarray:
     logits = scores.astype(np.float64) * unit
-    other_logits = np.concatenate(
-        (logits[:, :class_index], logits[:, class_index + 1:]),
-        axis=1,
-    )
+    class_mask = _validate_class_mask(class_mask, scores.shape[1])
+    if class_mask is None:
+        other_logits = np.concatenate(
+            (logits[:, :class_index], logits[:, class_index + 1:]),
+            axis=1,
+        )
+    else:
+        other_classes = class_mask.copy()
+        other_classes[class_index] = False
+        if not np.any(other_classes):
+            return np.full(scores.shape[0], -np.inf, dtype=np.float64)
+        other_logits = logits[:, other_classes]
     maximum = other_logits.max(axis=1)
     return maximum + np.log(
         np.exp(other_logits - maximum[:, None]).sum(axis=1)
     )
 
 
-def top1_accuracy(scores: np.ndarray, y: np.ndarray, counts: np.ndarray) -> float | None:
+def top1_accuracy(
+    scores: np.ndarray,
+    y: np.ndarray,
+    counts: np.ndarray,
+    class_mask: np.ndarray | None = None,
+) -> float | None:
     total = int(counts.sum())
     if total == 0:
         return None
-    correct = int(np.dot(counts, np.argmax(scores, axis=1) == y))
+    class_mask = _validate_class_mask(class_mask, scores.shape[1])
+    if class_mask is None:
+        predictions = np.argmax(scores, axis=1)
+    else:
+        if np.any(y < 0) or np.any(y >= class_mask.size):
+            raise ValueError("targets must be valid class indices")
+        active_classes = np.flatnonzero(class_mask)
+        predictions = active_classes[
+            np.argmax(scores[:, active_classes], axis=1)
+        ]
+    correct = int(np.dot(counts, predictions == y))
     return correct / total
 
 
@@ -127,7 +175,13 @@ def _class_coordinate_proposals(
     unit_bits: int,
     max_k: int,
     W: np.ndarray | None = None,
+    protected: np.ndarray | None = None,
+    class_mask: np.ndarray | None = None,
 ) -> tuple[np.ndarray, int, int, int, bool]:
+    if protected is not None:
+        protected = np.asarray(protected)
+        if protected.dtype != np.bool_ or protected.shape != y.shape:
+            raise ValueError("protected must be a bool mask with one entry per row")
     target = y
     target_score = scores[np.arange(target.size), target]
     class_score = scores[:, class_index]
@@ -142,7 +196,12 @@ def _class_coordinate_proposals(
         target_off_score = off_score_one
     else:
         unit = 2.0 ** -unit_bits
-        lse_other = _other_logsumexp(scores, class_index, unit)
+        lse_other = _other_logsumexp(
+            scores,
+            class_index,
+            unit,
+            class_mask,
+        )
 
     proposals = np.zeros(X.shape[1], dtype=np.int64)
     coordinates_walked = 0
@@ -214,6 +273,33 @@ def _class_coordinate_proposals(
             max_k=max_k,
         )
         comparisons += used
+        if protected is not None:
+            protected_active = protected[active]
+            if np.any(protected_active):
+                lower = int(np.iinfo(np.int64).min)
+                upper = int(np.iinfo(np.int64).max)
+                protected_positions = np.flatnonzero(protected_active)
+                for position in protected_positions:
+                    difference = (
+                        int(score_y[position]) - int(score_c[position])
+                    )
+                    if difference <= 0:
+                        raise AssertionError(
+                            "zero offset violates a protected row constraint"
+                        )
+                    value = int(x[position])
+                    if value > 0:
+                        upper = min(upper, (difference - 1) // value)
+                    else:
+                        magnitude = -value
+                        quotient, remainder = divmod(difference, magnitude)
+                        ceiling = quotient + int(remainder != 0)
+                        lower = max(lower, 1 - ceiling)
+                if not lower <= 0 <= upper:
+                    raise AssertionError(
+                        "zero offset must be feasible for protected rows"
+                    )
+                t_star = min(max(int(t_star), lower), upper)
         proposals[feature_index] = t_star
         if t_star and W is not None:
             W[class_index, feature_index] += t_star
@@ -463,12 +549,13 @@ def _objective(
     counts: np.ndarray,
     loss: str,
     unit_bits: int,
+    class_mask: np.ndarray | None = None,
 ) -> int | float:
-    return (
-        weighted_loss(scores, y, counts)
-        if loss == "hinge"
-        else softmax_loss(scores, y, counts, unit_bits)
-    )
+    if loss == "hinge":
+        return weighted_loss(scores, y, counts)
+    if class_mask is None:
+        return softmax_loss(scores, y, counts, unit_bits)
+    return softmax_loss(scores, y, counts, unit_bits, class_mask)
 
 
 def _joint_score_delta(X: np.ndarray, proposals: np.ndarray) -> np.ndarray:
@@ -504,6 +591,7 @@ def fit_readout(
     unit_bits: int = 4,
     strategy: str = "coordinate",
     workers: int = 1,
+    active_classes: np.ndarray | None = None,
 ) -> tuple[np.ndarray, dict]:
     if rows.X.shape[0] == 0:
         raise ValueError("training split contains no ground-truth positions")
@@ -523,6 +611,18 @@ def fit_readout(
         raise ValueError("workers must be positive")
     if strategy == "blocks" and workers > 1:
         raise ValueError("blocks strategy uses vectorized parallelism; workers must be 1")
+    class_mask = _validate_class_mask(active_classes, N_CLASSES)
+    if class_mask is not None:
+        if strategy != "coordinate":
+            raise ValueError("active_classes is supported only for coordinate strategy")
+        if loss != "softmax":
+            raise ValueError("active_classes is supported only for softmax loss")
+        if (
+            np.any(rows.y < 0)
+            or np.any(rows.y >= N_CLASSES)
+            or np.any(~class_mask[rows.y])
+        ):
+            raise ValueError("training targets must belong to active classes")
     X = rows.X
     y = rows.y
     counts = rows.counts
@@ -530,11 +630,18 @@ def fit_readout(
     color_groups = _color_features(X) if strategy == "blocks" else None
     W = np.zeros((N_CLASSES, X.shape[1]), dtype=np.int64)
     scores = X @ W.T
-    objective = _objective(scores, y, counts, loss, unit_bits)
+    objective = _objective(
+        scores,
+        y,
+        counts,
+        loss,
+        unit_bits,
+        class_mask,
+    )
     initial_objective = objective
     loss_per_sweep: list[int | float] = []
     accuracy_per_sweep: list[float] = []
-    initial_accuracy = top1_accuracy(scores, y, counts)
+    initial_accuracy = top1_accuracy(scores, y, counts, class_mask)
     best_train_accuracy = float(initial_accuracy)
     best_train_accuracy_sweep = 0
     stale_sweeps = 0
@@ -543,7 +650,10 @@ def fit_readout(
     comparisons = 0
     sweeps = 0
     stop_reason = "max_sweeps"
-    total_classes = max_sweeps * N_CLASSES
+    class_count = (
+        N_CLASSES if class_mask is None else int(np.count_nonzero(class_mask))
+    )
+    total_classes = max_sweeps * class_count
     classes_done = 0
     joint_steps = []
 
@@ -556,6 +666,8 @@ def fit_readout(
             changed = False
             if strategy == "coordinate":
                 for class_index in range(N_CLASSES):
+                    if class_mask is not None and not class_mask[class_index]:
+                        continue
                     _, walked, moved, used, class_changed = (
                         _class_coordinate_proposals(
                             X,
@@ -567,6 +679,7 @@ def fit_readout(
                             unit_bits,
                             max_k,
                             W,
+                            class_mask=class_mask,
                         )
                     )
                     coordinates_walked += walked
@@ -781,8 +894,15 @@ def fit_readout(
                     })
 
             sweeps = sweep + 1
-            objective = _objective(scores, y, counts, loss, unit_bits)
-            accuracy = float(top1_accuracy(scores, y, counts))
+            objective = _objective(
+                scores,
+                y,
+                counts,
+                loss,
+                unit_bits,
+                class_mask,
+            )
+            accuracy = float(top1_accuracy(scores, y, counts, class_mask))
             loss_per_sweep.append(objective)
             accuracy_per_sweep.append(accuracy)
             if accuracy > best_train_accuracy:
@@ -816,7 +936,12 @@ def fit_readout(
         "loss_per_sweep": loss_per_sweep,
         "train_top1_accuracy_per_sweep": accuracy_per_sweep,
         "initial_train_accuracy": initial_accuracy,
-        "final_train_accuracy": top1_accuracy(scores, y, counts),
+        "final_train_accuracy": top1_accuracy(
+            scores,
+            y,
+            counts,
+            class_mask,
+        ),
         "best_train_accuracy": best_train_accuracy,
         "best_train_accuracy_sweep": best_train_accuracy_sweep,
         "initial_loss": initial_objective,

@@ -5,19 +5,21 @@ import argparse
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import time
 
 import numpy as np
 
 from .certify import certify
-from .data import PreparedData, prepare_data
+from .data import AggregatedRows, PreparedData, prepare_data
 from .discover import (
     build_merge_trees,
     legacy_reference_matches,
     partition_metrics,
     prepare_discovery_data,
 )
+from .extend import add_class
 from .readout import fit_readout, scores_for, top1_accuracy
 from .workbook import DEFAULT_REGISTRY, load_workbook
 
@@ -147,6 +149,261 @@ def _write_model(
         arrays["slack_up"] = slack_up
         arrays["slack_down"] = slack_down
     np.savez(out_dir / "model.npz", **arrays)
+
+
+def _atomic_write_json(path: Path, report: dict) -> None:
+    temporary_path = path.with_name(path.name + ".tmp")
+    with temporary_path.open("w", encoding="utf-8") as stream:
+        json.dump(report, stream, indent=2, ensure_ascii=True)
+        stream.write("\n")
+        stream.flush()
+        os.fsync(stream.fileno())
+    os.replace(temporary_path, path)
+
+
+def _masked_predictions(
+    scores: np.ndarray,
+    class_mask: np.ndarray | None,
+) -> np.ndarray:
+    if class_mask is None:
+        return np.argmax(scores, axis=1)
+    active_classes = np.flatnonzero(class_mask)
+    return active_classes[np.argmax(scores[:, active_classes], axis=1)]
+
+
+def _extension_metrics(
+    rows: AggregatedRows,
+    W: np.ndarray,
+    holdout: int,
+    base_predictions: np.ndarray,
+    class_mask: np.ndarray | None,
+    new_class_bias: int | None = None,
+) -> dict:
+    scores = rows.X @ W.T
+    if new_class_bias is not None:
+        scores[:, holdout] += new_class_bias
+    predictions = _masked_predictions(scores, class_mask)
+    heldout_rows = rows.y == holdout
+    heldout_positions = int(rows.counts[heldout_rows].sum())
+    recall = (
+        int(np.dot(
+            rows.counts[heldout_rows],
+            predictions[heldout_rows] == holdout,
+        )) / heldout_positions
+        if heldout_positions
+        else None
+    )
+    eligible = (base_predictions == rows.y) & (rows.y != holdout)
+    flips = int(
+        rows.counts[eligible & (predictions != rows.y)].sum()
+    )
+    return {
+        "top1_accuracy": top1_accuracy(
+            scores,
+            rows.y,
+            rows.counts,
+            class_mask,
+        ),
+        "recall_on_holdout": recall,
+        "flips_from_base_correct_non_holdout": flips,
+        "holdout_positions": heldout_positions,
+    }
+
+
+def _extend(args: argparse.Namespace) -> int:
+    workbook_path = Path(args.workbook)
+    corpus_path = Path(args.text)
+    out_dir = Path(args.out)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    if not args.holdout:
+        raise ValueError("at least one --holdout is required")
+    if any(len(character) != 1 or not 32 <= ord(character) <= 126
+           for character in args.holdout):
+        raise ValueError("each holdout must be one ASCII95 character")
+    if len(set(args.holdout)) != len(args.holdout):
+        raise ValueError("--holdout characters must be unique")
+
+    encoding = load_workbook(workbook_path)
+    data = prepare_data("text", corpus_path, args.offsets, encoding)
+
+    retrain_started = time.monotonic()
+    W_retrain, retrain_stats = fit_readout(
+        data.train,
+        max_sweeps=50,
+        progress=True,
+        patience=3,
+        loss="softmax",
+        unit_bits=4,
+    )
+    retrain_wall_time = time.monotonic() - retrain_started
+    retrain_stats["wall_time_seconds"] = retrain_wall_time
+    holdout_reports = []
+
+    for character in args.holdout:
+        holdout = ord(character) - 32
+        active_classes = np.ones(95, dtype=bool)
+        active_classes[holdout] = False
+        train_mask = data.train.y != holdout
+        base_rows = AggregatedRows(
+            data.train.X[train_mask],
+            data.train.y[train_mask],
+            data.train.counts[train_mask],
+            data.train.context_keys[train_mask],
+        )
+        W_base, base_stats = fit_readout(
+            base_rows,
+            max_sweeps=50,
+            progress=True,
+            patience=3,
+            loss="softmax",
+            unit_bits=4,
+            active_classes=active_classes,
+        )
+        W_protected, protected_stats = add_class(
+            data.train,
+            W_base,
+            holdout,
+            protect=True,
+            max_sweeps=50,
+            patience=3,
+            unit_bits=4,
+        )
+        W_free, free_stats = add_class(
+            data.train,
+            W_base,
+            holdout,
+            protect=False,
+            max_sweeps=50,
+            patience=3,
+            unit_bits=4,
+        )
+        base_train_predictions = _masked_predictions(
+            data.train.X @ W_base.T,
+            active_classes,
+        )
+        base_test_predictions = _masked_predictions(
+            data.test.X @ W_base.T,
+            active_classes,
+        )
+        protected_train_metrics = _extension_metrics(
+            data.train,
+            W_protected,
+            holdout,
+            base_train_predictions,
+            None,
+            protected_stats["new_class_bias"]["final"],
+        )
+        if protected_train_metrics[
+            "flips_from_base_correct_non_holdout"
+        ] != 0:
+            raise RuntimeError(
+                f"protected add for {character!r} produced train flips"
+            )
+
+        def model_report(
+            W: np.ndarray,
+            fit_stats: dict,
+            class_mask: np.ndarray | None,
+            new_class_bias: int | None = None,
+        ) -> dict:
+            return {
+                "fit": {
+                    "wall_time_seconds": fit_stats["wall_time_seconds"],
+                    "comparisons": fit_stats["comparisons"],
+                    "sweeps": fit_stats["sweeps"],
+                    "stop_reason": fit_stats["stop_reason"],
+                    "new_class_bias": fit_stats.get("new_class_bias"),
+                },
+                "train": _extension_metrics(
+                    data.train,
+                    W,
+                    holdout,
+                    base_train_predictions,
+                    class_mask,
+                    new_class_bias,
+                ),
+                "test": _extension_metrics(
+                    data.test,
+                    W,
+                    holdout,
+                    base_test_predictions,
+                    class_mask,
+                    new_class_bias,
+                ),
+            }
+
+        holdout_reports.append({
+            "character": character,
+            "class_index": holdout,
+            "models": {
+                "base": model_report(
+                    W_base,
+                    base_stats,
+                    active_classes,
+                ),
+                "add_protected": model_report(
+                    W_protected,
+                    protected_stats,
+                    None,
+                    protected_stats["new_class_bias"]["final"],
+                ),
+                "add_free": model_report(
+                    W_free,
+                    free_stats,
+                    None,
+                    free_stats["new_class_bias"]["final"],
+                ),
+                "retrain": model_report(
+                    W_retrain,
+                    retrain_stats,
+                    None,
+                ),
+            },
+        })
+        print(
+            f"holdout {character!r}: protected train flips="
+            f"{protected_train_metrics['flips_from_base_correct_non_holdout']}; "
+            f"base/add-protected/add-free/retrain train/test accuracy="
+            f"{holdout_reports[-1]['models']['base']['train']['top1_accuracy']}/"
+            f"{holdout_reports[-1]['models']['base']['test']['top1_accuracy']}; "
+            f"{holdout_reports[-1]['models']['add_protected']['train']['top1_accuracy']}/"
+            f"{holdout_reports[-1]['models']['add_protected']['test']['top1_accuracy']}; "
+            f"{holdout_reports[-1]['models']['add_free']['train']['top1_accuracy']}/"
+            f"{holdout_reports[-1]['models']['add_free']['test']['top1_accuracy']}; "
+            f"{holdout_reports[-1]['models']['retrain']['train']['top1_accuracy']}/"
+            f"{holdout_reports[-1]['models']['retrain']['test']['top1_accuracy']}"
+        )
+
+    report = {
+        "method": "coordinate softmax class extension with optional no-flip protection",
+        "inputs": {
+            "workbook": {
+                "basename": workbook_path.name,
+                "sha256": _sha256(workbook_path),
+            },
+            "corpus": {
+                "basename": corpus_path.name,
+                "sha256": _sha256(corpus_path),
+            },
+        },
+        "data": {
+            "accepted_records": data.accepted_records,
+            "rejected_records": data.rejected_records,
+            "train_records": data.train_records,
+            "test_records": data.test_records,
+            "train_positions": data.train.positions,
+            "test_positions": data.test.positions,
+            "distinct_train_rows": int(data.train.y.size),
+            "distinct_test_rows": int(data.test.y.size),
+        },
+        "offsets": args.offsets,
+        "retrain_fit": retrain_stats,
+        "holdouts": holdout_reports,
+    }
+    report_path = out_dir / "extend.json"
+    _atomic_write_json(report_path, report)
+    print(f"report: {report_path}")
+    return 0
 
 
 def _audit(args: argparse.Namespace) -> int:
@@ -451,6 +708,22 @@ def build_parser() -> argparse.ArgumentParser:
     fit_parser.add_argument("--baselines", action="store_true")
     fit_parser.add_argument("--certify", action="store_true")
     fit_parser.set_defaults(run=_fit)
+
+    extend_parser = commands.add_parser(
+        "extend",
+        help="fit a base vocabulary and add held-out classes",
+    )
+    extend_parser.add_argument("--workbook", required=True)
+    extend_parser.add_argument("--text", required=True)
+    extend_parser.add_argument("--offsets", type=int, required=True)
+    extend_parser.add_argument(
+        "--holdout",
+        action="append",
+        required=True,
+        help="character to omit from the base vocabulary (repeatable)",
+    )
+    extend_parser.add_argument("--out", required=True)
+    extend_parser.set_defaults(run=_extend)
 
     discover_parser = commands.add_parser(
         "discover",
