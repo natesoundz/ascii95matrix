@@ -30,7 +30,8 @@ def create_fixture(path: Path) -> None:
         """
         CREATE TABLE lexeme (
           lexeme_id INTEGER PRIMARY KEY,
-          normalized TEXT
+          normalized TEXT,
+          lemma TEXT
         );
         CREATE TABLE collocation (
           collocation_id INTEGER PRIMARY KEY,
@@ -41,6 +42,7 @@ def create_fixture(path: Path) -> None:
         CREATE TABLE relation (
           relation_id INTEGER PRIMARY KEY,
           source_lexeme_id INTEGER,
+          relation_type TEXT,
           target_lemma TEXT
         );
         CREATE TABLE webster_entry (
@@ -56,6 +58,7 @@ def create_fixture(path: Path) -> None:
         CREATE TABLE occurrence (
           occurrence_id INTEGER PRIMARY KEY,
           lemma TEXT,
+          text TEXT,
           example_id INTEGER,
           token_index INTEGER,
           head_index INTEGER
@@ -64,6 +67,12 @@ def create_fixture(path: Path) -> None:
           inflection_id INTEGER PRIMARY KEY,
           lexeme_id INTEGER,
           normalized TEXT
+        );
+        CREATE TABLE sense (
+          sense_id INTEGER PRIMARY KEY,
+          lexeme_id INTEGER,
+          pos TEXT,
+          definition TEXT
         );
         CREATE TABLE indexed_parent (
           parent_id INTEGER PRIMARY KEY,
@@ -90,21 +99,24 @@ def create_fixture(path: Path) -> None:
         "café", "naïve", "façade", "résumé", "雪", "unicode",
     ]
     con.executemany(
-        "INSERT INTO lexeme(lexeme_id, normalized) VALUES (?, ?)",
-        [(i + 1, word) for i, word in enumerate(words)],
+        "INSERT INTO lexeme(lexeme_id, normalized, lemma) VALUES (?, ?, ?)",
+        [(i + 1, word, word.lower()) for i, word in enumerate(words)],
     )
     con.executemany(
         "INSERT INTO collocation VALUES (?, ?, ?, ?)",
-        [
+        [(1, "Earth", "sun", 2.5), (2, "Earth", "sun", 0.5), (3, "Earth", "world", None)]
+        + [
             (i + 1, words[i], words[(i + 1) % len(words)], float(i + 1))
-            for i in range(24)
+            for i in range(3, 24)
         ],
     )
     con.executemany(
-        "INSERT INTO relation VALUES (?, ?, ?)",
-        [
-            (i + 1, i + 1, None if i == 2 else words[(i + 2) % len(words)])
-            for i in range(18)
+        "INSERT INTO relation VALUES (?, ?, ?, ?)",
+        [(1, 1, "synonym", "sun"), (2, 1, "related", "world"),
+         (3, 1, "synonym", "sun")]
+        + [
+            (i + 1, i + 1, "related", words[(i + 2) % len(words)])
+            for i in range(3, 18)
         ],
     )
     con.executemany(
@@ -116,12 +128,15 @@ def create_fixture(path: Path) -> None:
         [(i + 1, i + 2, i % 4 + 1) for i in range(1, 16)],
     )
     con.executemany(
-        "INSERT INTO occurrence VALUES (?, ?, ?, ?, ?)",
+        "INSERT INTO occurrence VALUES (?, ?, ?, ?, ?, ?)",
         [
             (
                 i + 1,
-                words[i % len(words)],
-                i // 3,
+                (["Earth", "sun", "moon", "earth", "sun", "world"][i]
+                 if i < 6 else words[i % len(words)]),
+                (["Earth", "sun", "moon", "earth", "sun", "world"][i]
+                 if i < 6 else words[i % len(words)]),
+                i // 3 + 1,
                 i % 3,
                 None if i % 5 == 0 else (i % 3),
             )
@@ -131,6 +146,15 @@ def create_fixture(path: Path) -> None:
     con.executemany(
         "INSERT INTO inflection_form VALUES (?, ?, ?)",
         [(i + 1, i + 1, words[i] + ("s" if i % 2 else "ed")) for i in range(20)],
+    )
+    con.executemany(
+        "INSERT INTO sense VALUES (?, ?, ?, ?)",
+        [
+            (1, 1, "noun", "the planet on which we live"),
+            (2, 1, "noun", "the third planet from the sun"),
+            (3, 2, "noun", "the star at the center of the solar system"),
+            (4, 2, "verb", "to expose to sunlight"),
+        ],
     )
     con.executemany(
         "INSERT INTO indexed_parent VALUES (?, ?)",
