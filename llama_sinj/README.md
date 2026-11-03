@@ -33,15 +33,14 @@ UI. This patch currently supports Qwen2 and Qwen2.5 only.
 
 ## Rebuild
 
-Apply `sinj.patch` to a fresh `ggml-org/llama.cpp` b12057 checkout. Then install
-the Vulkan SDK, Ninja, and LLVM/Clang, and configure/build with the same Windows
-settings as `.github/workflows/llama-sinj-windows.yml`:
+Apply `sinj.patch` to a fresh `ggml-org/llama.cpp` b12057 checkout. Install
+Visual Studio C++ build tools and the Vulkan SDK. The workflow uses MSVC with
+CPU variants disabled:
 
 ```powershell
-cmake -S . -B build -G "Ninja Multi-Config" `
-  -D CMAKE_TOOLCHAIN_FILE=cmake/x64-windows-llvm.cmake `
-  -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON `
+cmake -S . -B build `
+  -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=OFF `
   -DGGML_VULKAN=ON -DLLAMA_BUILD_BORINGSSL=ON -DLLAMA_BUILD_TESTS=OFF
 cmake --build build --config Release --target llama-server llama-cli `
-  llama-completion llama-sinj-extract
+  llama-completion llama-sinj-extract --parallel 2
 ```
