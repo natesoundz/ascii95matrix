@@ -42,6 +42,12 @@ jobs:
         run: |
           cmake --build build --config Release --target llama-server llama-cli llama-completion llama-sinj-extract --parallel 2
 
+      - name: Stage Vulkan loader
+        run: |
+          $loader = Join-Path $env:VULKAN_SDK "Bin\vulkan-1.dll"
+          if (-not (Test-Path $loader)) { throw "Vulkan loader not found: $loader" }
+          Copy-Item $loader "llama.cpp/build/bin/Release/vulkan-1.dll"
+
       - name: Package
         run: Compress-Archive -Path llama.cpp/build/bin/Release/*, llama_sinj/README.md -DestinationPath llama-sinj-win-x64.zip -Force
 
