@@ -21,6 +21,12 @@ jobs:
           ref: b12057
           path: llama.cpp
 
+      - uses: actions/checkout@v4
+        with:
+          repository: KhronosGroup/Vulkan-Loader
+          ref: v1.4.357
+          path: Vulkan-Loader
+
       - name: Apply sinj patch
         working-directory: llama.cpp
         run: git apply ../llama_sinj/sinj.patch
@@ -42,14 +48,21 @@ jobs:
         run: |
           cmake --build build --config Release --target llama-server llama-cli llama-completion llama-sinj-extract --parallel 2
 
+      - name: Build Vulkan loader
+        working-directory: Vulkan-Loader
+        run: |
+          cmake -S . -B build -D UPDATE_DEPS=ON -D BUILD_TESTS=OFF
+          cmake --build build --config Release --parallel 2
+          cmake --install build --config Release --prefix install
+
       - name: Stage Vulkan loader
         run: |
-          $loader = Join-Path $env:VULKAN_SDK "Bin\vulkan-1.dll"
-          if (-not (Test-Path $loader)) { throw "Vulkan loader not found: $loader" }
+          $loader = "Vulkan-Loader/install/bin/vulkan-1.dll"
+          if (-not (Test-Path $loader)) { throw "Built Vulkan loader not found: $loader" }
           Copy-Item $loader "llama.cpp/build/bin/Release/vulkan-1.dll"
 
       - name: Package
-        run: Compress-Archive -Path llama.cpp/build/bin/Release/*, llama_sinj/README.md -DestinationPath llama-sinj-win-x64.zip -Force
+        run: Compress-Archive -Path llama.cpp/build/bin/Release/*, Vulkan-Loader/LICENSE.txt, llama_sinj/README.md -DestinationPath llama-sinj-win-x64.zip -Force
 
       - uses: actions/upload-artifact@v4
         with:

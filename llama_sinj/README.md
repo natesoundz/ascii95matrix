@@ -29,7 +29,8 @@ Create a JSON sidecar with the extractor:
 
 The server provides `GET /sinj` to inspect active entries and `POST /sinj` to
 replace or clear them. The same `llama-server` works with the llama-agent web
-UI. This patch currently supports Qwen2 and Qwen2.5 only.
+UI. This patch currently supports Qwen2 and Qwen2.5 only. The package includes
+the Khronos Vulkan loader, but a compatible GPU driver is still required.
 
 ## Rebuild
 
@@ -43,4 +44,15 @@ cmake -S . -B build `
   -DGGML_VULKAN=ON -DLLAMA_BUILD_BORINGSSL=ON -DLLAMA_BUILD_TESTS=OFF
 cmake --build build --config Release --target llama-server llama-cli `
   llama-completion llama-sinj-extract --parallel 2
+```
+
+The workflow also builds the Khronos Vulkan loader v1.4.357 and packages its
+DLL and license:
+
+```powershell
+git clone --depth 1 --branch v1.4.357 https://github.com/KhronosGroup/Vulkan-Loader.git Vulkan-Loader
+cmake -S Vulkan-Loader -B Vulkan-Loader/build -D UPDATE_DEPS=ON -D BUILD_TESTS=OFF
+cmake --build Vulkan-Loader/build --config Release --parallel 2
+cmake --install Vulkan-Loader/build --config Release --prefix Vulkan-Loader/install
+Copy-Item Vulkan-Loader/install/bin/vulkan-1.dll build/bin/Release/
 ```
