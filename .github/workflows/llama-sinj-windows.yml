@@ -1,0 +1,85 @@
+name: Build llama.cpp symbolic injection
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "llama_sinj/**"
+      - ".github/workflows/llama-sinj-windows.yml"
+
+jobs:
+  windows:
+    runs-on: windows-2025
+    env:
+      VULKAN_VERSION: 1.4.357.0
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: b12057
+          path: llama.cpp
+
+      - name: Apply sinj patch
+        working-directory: llama.cpp
+        run: git apply ../llama_sinj/sinj.patch
+
+      - name: Install Ninja
+        run: choco install ninja --yes --no-progress
+
+      - name: Install LLVM
+        run: |
+          choco install llvm --yes --no-progress
+          Add-Content $env:GITHUB_PATH "$env:ProgramFiles\LLVM\bin"
+
+      - name: Install Vulkan SDK
+        run: |
+          curl.exe -o $env:RUNNER_TEMP/VulkanSDK-Installer.exe -L "https://sdk.lunarg.com/sdk/download/${env:VULKAN_VERSION}/windows/vulkansdk-windows-X64-${env:VULKAN_VERSION}.exe"
+          & "$env:RUNNER_TEMP\VulkanSDK-Installer.exe" --accept-licenses --default-answer --confirm-command install
+          Add-Content $env:GITHUB_ENV "VULKAN_SDK=C:\VulkanSDK\${env:VULKAN_VERSION}"
+          Add-Content $env:GITHUB_PATH "C:\VulkanSDK\${env:VULKAN_VERSION}\bin"
+
+      - name: Configure and build
+        working-directory: llama.cpp
+        shell: cmd
+        run: |
+          for /f "usebackq tokens=*" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set VSINSTALLDIR=%%i
+          call "%VSINSTALLDIR%\VC\Auxiliary\Build\vcvarsall.bat" x64
+          cmake -S . -B build -G "Ninja Multi-Config" -D CMAKE_TOOLCHAIN_FILE=cmake/x64-windows-llvm.cmake -DGGML_NATIVE=OFF -DGGML_BACKEND_DL=ON -DGGML_CPU_ALL_VARIANTS=ON -DGGML_VULKAN=ON -DLLAMA_BUILD_BORINGSSL=ON -DLLAMA_BUILD_TESTS=OFF || exit /b 1
+          cmake --build build --config Release --target llama-server llama-cli llama-completion llama-sinj-extract --parallel
+
+      - name: Package
+        run: Compress-Archive -Path llama.cpp/build/bin/Release/*, llama_sinj/README.md -DestinationPath llama-sinj-win-x64.zip -Force
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: llama-sinj-win-x64
+          path: llama-sinj-win-x64.zip
+
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/checkout@v4
+        with:
+          repository: ggml-org/llama.cpp
+          ref: b12057
+          path: llama.cpp
+
+      - name: Apply sinj patch
+        working-directory: llama.cpp
+        run: git apply ../llama_sinj/sinj.patch
+
+      - name: Configure
+        run: cmake -S llama.cpp -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF
+
+      - name: Build test targets
+        run: cmake --build build --target llama-completion test-sinj --parallel 2
+
+      - name: Download test model
+        run: curl --fail --location --retry 5 --retry-delay 2 --connect-timeout 30 "https://huggingface.co/bartowski/Qwen2.5-0.5B-Instruct-GGUF/resolve/main/Qwen2.5-0.5B-Instruct-Q4_K_M.gguf?download=true" -o qwen2.5-0.5b-instruct-q4_k_m.gguf
+
+      - name: Run sinj tests
+        run: build/bin/test-sinj qwen2.5-0.5b-instruct-q4_k_m.gguf
